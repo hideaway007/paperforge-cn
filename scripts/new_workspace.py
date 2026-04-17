@@ -5,10 +5,8 @@ scripts/new_workspace.py
 从当前项目复制 harness 骨架，在项目内创建全新干净工作区。
 不携带任何研究产物（raw-library、research-wiki、outputs、process-memory）。
 
-默认在项目根目录下的 workspaces/ 子目录中创建，自动编号使用现有最大编号 + 1：
-  workspaces/ws_001/
-  workspaces/ws_002/
-  ...
+默认在项目根目录下的 workspaces/ 子目录中创建，自动编号格式为 workspaces/ws_NNN/，
+每次使用现有最大编号 + 1。
 
 用法：
   python3 scripts/new_workspace.py                 # 空项目自动命名 → workspaces/ws_001/

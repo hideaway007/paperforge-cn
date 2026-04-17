@@ -94,9 +94,6 @@ class NewWorkspacePart4PolicyTests(unittest.TestCase):
         script_cases = [
             ("root", PROJECT_ROOT / "scripts" / "new_workspace.py"),
         ]
-        workspace_copy = PROJECT_ROOT / "workspaces" / "ws_002" / "scripts" / "new_workspace.py"
-        if workspace_copy.exists():
-            script_cases.append(("ws_002", workspace_copy))
 
         for label, script_path in script_cases:
             with self.subTest(label=label):
@@ -104,23 +101,16 @@ class NewWorkspacePart4PolicyTests(unittest.TestCase):
                 with tempfile.TemporaryDirectory() as tmpdir:
                     project_root = Path(tmpdir)
                     ws_dir = project_root / "workspaces"
-                    (ws_dir / "ws_002").mkdir(parents=True)
-                    (ws_dir / "ws_010").mkdir()
+                    (ws_dir / "ws_101").mkdir(parents=True)
+                    (ws_dir / "ws_110").mkdir()
                     (ws_dir / "scratch").mkdir()
 
-                    self.assertEqual(ws_dir / "ws_011", module.auto_name(project_root))
+                    self.assertEqual(ws_dir / "ws_111", module.auto_name(project_root))
 
     def test_new_workspace_scaffold_creates_part4_writing_policy_audit_entry(self):
         script_cases = [
             ("root", PROJECT_ROOT, PROJECT_ROOT / "scripts" / "new_workspace.py"),
         ]
-        workspace_copy = PROJECT_ROOT / "workspaces" / "ws_002" / "scripts" / "new_workspace.py"
-        if workspace_copy.exists():
-            script_cases.append((
-                "ws_002",
-                PROJECT_ROOT / "workspaces" / "ws_002",
-                workspace_copy,
-            ))
 
         for label, source_root, script_path in script_cases:
             with self.subTest(label=label):
@@ -147,8 +137,7 @@ class NewWorkspacePart4PolicyTests(unittest.TestCase):
                     self.assertTrue((target / "outputs" / "part5" / "chapter_briefs").is_dir())
                     self.assertTrue((target / "outputs" / "part5" / "case_analysis_templates").is_dir())
 
-                    if label in {"root", "ws_002"}:
-                        self.assert_indexed_baseline_source_index(target)
+                    self.assert_indexed_baseline_source_index(target)
 
                     result = subprocess.run(
                         ["python3", "cli.py", "--help"],

@@ -26,4 +26,4 @@ MVP 阶段的大纲应至少覆盖以下功能性章节：
 
 ## 违反后果
 
-若章节结构无法覆盖 argument tree 的核心节点，Part 4 不应进入 `outline_confirmed`。
+若章节结构无法覆盖 argument tree 的核心节点，Part 4 deterministic validation 不应通过。
