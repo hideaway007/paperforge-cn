@@ -1,22 +1,40 @@
 const stageNames = {
   part1: "文献收集",
-  part2: "Research Wiki",
+  part2: "研究 Wiki",
   part3: "论证树",
   part4: "论文大纲",
   part5: "写作与修订",
   part6: "最终整理"
 };
 
+const stageIndexLabels = {
+  part1: "阶段 1",
+  part2: "阶段 2",
+  part3: "阶段 3",
+  part4: "阶段 4",
+  part5: "阶段 5",
+  part6: "阶段 6"
+};
+
+const stageIcons = {
+  part1: "upload_file",
+  part2: "menu_book",
+  part3: "psychology",
+  part4: "format_list_bulleted",
+  part5: "edit_note",
+  part6: "verified"
+};
+
 const stageActions = {
   part1: [
-    ["part1-intake", "生成 intake 请求", "secondary"],
-    ["confirm-intake", "确认并运行 Part 1", "warn"],
+    ["part1-intake", "生成研究信息请求", "secondary"],
+    ["confirm-intake", "确认并运行阶段 1", "warn"],
     ["part1-runner", "运行检索流程", ""],
     ["part1-export-table", "导出论文表", "secondary"]
   ],
   part2: [
     ["part2-generate", "生成 Wiki", ""],
-    ["part2-health", "Wiki health", "secondary"]
+    ["part2-health", "检查 Wiki", "secondary"]
   ],
   part3: [
     ["part3-seed-map", "生成 seed map", ""],
@@ -31,18 +49,18 @@ const stageActions = {
     ["part4-check", "检查大纲", "secondary"]
   ],
   part5: [
-    ["part5-prep", "Prep", ""],
-    ["part5-draft", "Draft", ""],
-    ["part5-review", "Review", ""],
-    ["part5-revise", "Revise", ""],
-    ["part5-all", "运行 Part 5 MVP", "warn"],
-    ["part5-check", "检查 Part 5", "secondary"]
+    ["part5-prep", "准备写作输入包", ""],
+    ["part5-draft", "生成初稿", ""],
+    ["part5-review", "生成审查报告", ""],
+    ["part5-revise", "生成修订稿", ""],
+    ["part5-all", "运行阶段 5 完整流程", "warn"],
+    ["part5-check", "检查阶段 5", "secondary"]
   ],
   part6: [
     ["part6-precheck", "只读预检", "secondary"],
-    ["part6-authorize", "授权 Part 6", "warn"],
-    ["part6-finalize", "运行 finalizer", "danger"],
-    ["part6-check", "检查 package", "secondary"],
+    ["part6-authorize", "授权阶段 6", "warn"],
+    ["part6-finalize", "运行最终整理", "danger"],
+    ["part6-check", "检查交付包", "secondary"],
     ["part6-confirm-final", "确认最终决策", "danger"]
   ]
 };
@@ -70,9 +88,14 @@ function statusClass(stage) {
 
 function gateBadge(stage) {
   if (!stage) return `<span class="badge wait">未知</span>`;
-  if (stage.gate_passed) return `<span class="badge ok">gate passed</span>`;
-  if (stage.status === "failed") return `<span class="badge fail">failed</span>`;
-  return `<span class="badge wait">${stage.status || "not_started"}</span>`;
+  if (stage.gate_passed) return `<span class="badge ok">已通过</span>`;
+  if (stage.status === "failed") return `<span class="badge fail">失败</span>`;
+  const labels = {
+    not_started: "未开始",
+    in_progress: "运行中",
+    completed: "已完成"
+  };
+  return `<span class="badge wait">${labels[stage.status] || stage.status || "未开始"}</span>`;
 }
 
 function artifactIcon(artifact) {
@@ -81,10 +104,84 @@ function artifactIcon(artifact) {
   return "✓";
 }
 
+function setText(selector, value) {
+  const element = $(selector);
+  if (element) element.textContent = value;
+}
+
+function allStageArtifacts() {
+  const stages = appState.data?.status?.stages || {};
+  return Object.keys(stageNames).flatMap((stageId) =>
+    (stages[stageId]?.artifacts || []).map((artifact) => ({ ...artifact, stageId }))
+  );
+}
+
+function artifactLabel(path) {
+  const labels = {
+    "raw-library/metadata.json": "文献库元数据",
+    "outputs/part1/authenticity_report.json": "真实性报告",
+    "research-wiki/index.json": "研究 Wiki 索引",
+    "outputs/part3/argument_tree.json": "权威论证树",
+    "outputs/part4/paper_outline.json": "论文大纲",
+    "outputs/part5/manuscript_v2.md": "阶段 5 修订稿",
+    "outputs/part5/review_matrix.json": "审查矩阵",
+    "outputs/part5/review_report.md": "审查报告",
+    "outputs/part5/revision_log.json": "修订记录",
+    "outputs/part5/part6_readiness_decision.json": "阶段 6 交接判断",
+    "outputs/part6/final_manuscript.md": "最终稿",
+    "outputs/part6/claim_risk_report.json": "论断风险审计",
+    "outputs/part6/citation_consistency_report.json": "引用一致性审计",
+    "outputs/part6/submission_package_manifest.json": "交付包清单",
+    "outputs/part6/final_readiness_decision.json": "最终就绪判断"
+  };
+  return labels[path] || path.split("/").pop() || path;
+}
+
+function artifactStatusText(artifact) {
+  if (!artifact?.exists) return "未生成";
+  if (artifact.schema_valid === false) return "结构错误";
+  if (artifact.schema_valid === true) return "结构有效";
+  return "已存在";
+}
+
+function readableCommand(command) {
+  const labels = {
+    "part1-intake": "生成研究信息请求",
+    "confirm-intake": "确认研究信息并运行阶段 1",
+    "part1-runner": "运行阶段 1 检索流程",
+    "part1-export-table": "导出已下载论文表",
+    "part2-generate": "生成研究 Wiki",
+    "part2-health": "检查 Wiki 健康状态",
+    "part3-seed-map": "生成论证 seed map",
+    "part3-generate": "生成候选论证树",
+    "part3-compare": "生成候选比较",
+    "part3-refine": "细化候选论证树",
+    "part3-select": "锁定论证树选择",
+    "part4-generate": "生成论文大纲",
+    "part4-check": "检查论文大纲",
+    "part5-all": "运行阶段 5 完整流程",
+    "part5-check": "检查阶段 5",
+    "part6-precheck": "阶段 6 只读预检",
+    "part6-authorize": "授权阶段 6",
+    "part6-finalize": "运行最终整理",
+    "part6-check": "检查交付包",
+    "part6-confirm-final": "确认最终决策",
+    "save-intake": "保存研究信息",
+    "save-intake-run": "保存研究信息并运行阶段 1"
+  };
+  return labels[command] || command;
+}
+
 function stageDescription(stageId) {
-  const stages = appState.data?.manifest?.stages || [];
-  const found = stages.find((stage) => stage.id === stageId);
-  return found?.description || "";
+  const descriptions = {
+    part1: "文献检索、下载、真实性校验与资料库构建",
+    part2: "把资料库转成研究 Wiki，维护证据映射与冲突记录",
+    part3: "生成三份候选论证树，比较后由用户锁定",
+    part4: "生成大纲三件套，并校验与论证树对齐",
+    part5: "生成正文、审查报告、修订稿与阶段 6 交接判断",
+    part6: "用户授权后生成最终稿、审计和交付包清单"
+  };
+  return descriptions[stageId] || "";
 }
 
 async function fetchStatus(options = {}) {
@@ -120,7 +217,7 @@ function renderContextSelect() {
   for (const context of appState.data.contexts || []) {
     const option = document.createElement("option");
     option.value = context.id;
-    option.textContent = context.is_latest ? `${context.label}（latest）` : context.label;
+    option.textContent = context.is_latest ? `${context.label}（最新）` : context.label;
     select.append(option);
   }
   select.value = appState.contextId || appState.data.default_context_id || "root";
@@ -129,20 +226,84 @@ function renderContextSelect() {
 function renderOverview() {
   const status = appState.data.status;
   const summary = appState.data.summary || {};
-  $("#activePath").textContent = appState.data.active_context?.path || "";
-  $("#sourceCount").textContent = String(summary.source_count ?? 0);
-  $("#wikiPages").textContent = String(summary.wiki_pages ?? 0);
-  $("#readinessVerdict").textContent = summary.part5_readiness || "-";
+  const stages = status?.stages || {};
+  const stageIds = Object.keys(stageNames);
+  const completedCount = stageIds.filter((stageId) => {
+    const stage = stages[stageId] || {};
+    return stage.status === "completed" && stage.gate_passed === true;
+  }).length;
+  const progress = Math.round((completedCount / stageIds.length) * 100);
+  const artifacts = allStageArtifacts();
+  const existingArtifacts = artifacts.filter((artifact) => artifact.exists);
+  const references = appState.data?.part1_references?.references || [];
+  const acceptedCount = appState.data?.part1_references?.accepted_count ?? references.filter((item) => item.library_status === "accepted").length;
+  const acceptedReferences = references.filter((item) => item.library_status === "accepted");
+  const cnkiCount = acceptedReferences.filter((item) => {
+    const text = `${item.source_name || ""} ${item.query_id || ""}`.toLowerCase();
+    return text.includes("cnki") || text.includes("知网");
+  }).length;
+  const cnkiRatio = acceptedCount ? Math.round((cnkiCount / acceptedCount) * 100) : 0;
+  const currentStage = status?.current_stage || appState.selectedStage || "part1";
+  const contextId = appState.data.active_context?.id || appState.contextId || "root";
+  const contextKind = contextId === "root" ? "root 控制面" : "隔离工作区";
+  const authenticity = artifacts.find((artifact) => artifact.path === "outputs/part1/authenticity_report.json");
+  const excludedCount = references.filter((item) => item.library_status === "excluded").length;
+
+  setText("#activePath", appState.data.active_context?.path || "");
+  setText("#sourceCount", String(summary.source_count ?? 0));
+  setText("#wikiPages", String(summary.wiki_pages ?? 0));
+  setText("#artifactCount", String(existingArtifacts.length));
+  setText("#acceptedCount", `${acceptedCount} / 40`);
+  setText("#cnkiRatio", `${cnkiRatio}%`);
+  setText("#authenticityStatus", artifactStatusText(authenticity));
+  setText("#excludedCount", String(excludedCount));
+  setText("#readinessVerdict", summary.part5_readiness || "未形成");
+  setText("#contextCrumb", contextId === "root" ? "root" : `root / ${contextId}`);
+  setText("#contextKind", contextKind);
+  setText("#currentStageLabel", `当前阶段：${stageNames[currentStage] || currentStage}`);
+  setText("#stageProgress", `完成度：${completedCount}/${stageIds.length}`);
+  setText("#progressPercent", `${progress}%`);
+  setText("#workflowDigest", `${stageNames[currentStage] || "当前阶段"}正在作为主工作面；已存在 ${existingArtifacts.length} 个阶段产物，人工确认点仍以右侧决策中心为准。`);
+  const progressFill = $("#progressFill");
+  if (progressFill) progressFill.style.width = `${progress}%`;
 
   if (appState.data.status_error) {
-    $("#nextActionTitle").textContent = "状态读取失败";
-    $("#nextActionReason").textContent = appState.data.status_error.message;
+    setText("#nextActionTitle", "状态读取失败");
+    const message = appState.data.status_error.message || "";
+    const readableError = message.includes("runtime/state.json")
+      ? "缺少运行状态文件。请先在项目根目录执行初始化命令，再刷新本页面。"
+      : `本地状态接口返回异常：${message}`;
+    setText("#nextActionReason", readableError);
     return;
   }
 
   const next = status?.next_action || {};
-  $("#nextActionTitle").textContent = next.command || "当前没有可执行建议";
-  $("#nextActionReason").textContent = next.reason || "所有可读状态已刷新。";
+  setText("#nextActionTitle", next.command ? readableCommand(next.command) : "当前没有可执行建议");
+  setText("#nextActionReason", next.reason || "所有可读状态已刷新。");
+}
+
+function renderArtifactSummary() {
+  const target = $("#artifactSummaryList");
+  if (!target) return;
+  const artifacts = allStageArtifacts()
+    .filter((artifact) => artifact.exists)
+    .slice(0, 6);
+  if (!artifacts.length) {
+    target.innerHTML = `<p class="muted">当前上下文还没有可核查的权威产物。</p>`;
+    return;
+  }
+  target.innerHTML = artifacts.map((artifact) => `
+    <button class="artifact-summary-item" type="button" data-artifact="${escapeHtml(artifact.path)}">
+      <span class="material-symbols-outlined">${stageIcons[artifact.stageId] || "description"}</span>
+      <span>
+        <strong>${escapeHtml(artifactLabel(artifact.path))}</strong>
+        <small>${escapeHtml(stageIndexLabels[artifact.stageId] || artifact.stageId)} · ${escapeHtml(artifactStatusText(artifact))}</small>
+      </span>
+    </button>
+  `).join("");
+  target.querySelectorAll("[data-artifact]").forEach((element) => {
+    element.addEventListener("click", () => openArtifact(element.getAttribute("data-artifact")));
+  });
 }
 
 function arrayToLines(value) {
@@ -184,7 +345,7 @@ function renderIntakeForm(force = false) {
   setInputValue("#exclusions", arrayToLines(intake.exclusions || intake.exclusion_rules));
   setInputValue("#scopeNotes", intake.scope_notes || "");
   appState.intakeDirty = false;
-  $("#intakeStatus").textContent = "Intake 表单已载入。";
+  $("#intakeStatus").textContent = "研究信息表单已载入。";
 }
 
 function intakePayload() {
@@ -234,7 +395,7 @@ function renderStages() {
     const artifacts = (stage.artifacts || []).map((artifact) => {
       const linkClass = artifact.exists ? "artifact-link exists" : "artifact-link";
       const click = artifact.exists ? `data-artifact="${artifact.path}"` : "";
-      const schema = artifact.schema_valid === true ? " · schema ok" : artifact.schema_valid === false ? " · schema fail" : "";
+      const schema = artifact.schema_valid === true ? " · 结构有效" : artifact.schema_valid === false ? " · 结构错误" : "";
       return `
         <li class="artifact-item">
           <span>${artifactIcon(artifact)}</span>
@@ -252,7 +413,7 @@ function renderStages() {
 
     card.innerHTML = `
       <div class="stage-topline">
-        <span class="stage-id">${stageId.toUpperCase()}</span>
+        <span class="stage-id"><span class="material-symbols-outlined">${stageIcons[stageId]}</span>${stageIndexLabels[stageId]}</span>
         ${gateBadge(stage)}
       </div>
       <h3>${stageNames[stageId]}</h3>
@@ -355,6 +516,7 @@ function visibleStageActions(stageId) {
     }
     if (pendingGate("part3", "argument_tree_selected")) {
       actions.push(["part3-refine", "细化候选", "secondary"]);
+      actions.push(["part3-select", "锁定选择", "warn"]);
     }
     return actions;
   }
@@ -371,9 +533,9 @@ function visibleStageActions(stageId) {
 
   if (stageId === "part5") {
     if (!stageComplete("part4") || stageComplete("part5")) return actions;
-    actions.push(["part5-all", "运行 Part 5 MVP", ""]);
+    actions.push(["part5-all", "运行阶段 5 完整流程", ""]);
     if (hasArtifact("part5", "outputs/part5/manuscript_v2.md")) {
-      actions.push(["part5-check", "检查 Part 5", "secondary"]);
+      actions.push(["part5-check", "检查阶段 5", "secondary"]);
     }
     return actions;
   }
@@ -382,18 +544,18 @@ function visibleStageActions(stageId) {
     if (!stageComplete("part5") || stageComplete("part6")) return actions;
     if (pendingGate("part6", "part6_finalization_authorized")) {
       actions.push(["part6-precheck", "只读预检", "secondary"]);
-      actions.push(["part6-authorize", "授权 Part 6", "warn"]);
+      actions.push(["part6-authorize", "授权阶段 6", "warn"]);
       return actions;
     }
     if (!hasArtifact("part6", "outputs/part6/submission_package_manifest.json")) {
-      actions.push(["part6-finalize", "运行 finalizer", ""]);
+      actions.push(["part6-finalize", "运行最终整理", ""]);
       return actions;
     }
     if (pendingGate("part6", "part6_final_decision_confirmed")) {
       actions.push(["part6-confirm-final", "确认最终决策", "warn"]);
       return actions;
     }
-    actions.push(["part6-check", "检查 package", "secondary"]);
+    actions.push(["part6-check", "检查交付包", "secondary"]);
     return actions;
   }
 
@@ -401,8 +563,8 @@ function visibleStageActions(stageId) {
 }
 
 function renderActions() {
-  $("#selectedStageTitle").textContent = `${appState.selectedStage.toUpperCase()} 操作`;
-  $("#part3Decision").classList.add("hidden");
+  $("#selectedStageTitle").textContent = `${stageIndexLabels[appState.selectedStage] || "当前阶段"} 操作`;
+  $("#part3Decision").classList.toggle("hidden", appState.selectedStage !== "part3");
   $("#part6Decision").classList.toggle("hidden", appState.selectedStage !== "part6");
 
   const actionPanel = $("#actionButtons");
@@ -488,6 +650,17 @@ function readableNode(node, index) {
   return `${firstSentence.slice(0, 92)}...`;
 }
 
+function readableReferenceToken(token) {
+  const labels = {
+    accepted: "已接受",
+    excluded: "已排除",
+    success: "已下载",
+    failed: "失败",
+    pending: "待处理"
+  };
+  return labels[token] || token;
+}
+
 function renderPart3Candidates() {
   const target = $("#candidateOptions");
   const part3 = appState.data?.part3 || {};
@@ -497,7 +670,7 @@ function renderPart3Candidates() {
 
   if (!candidates.length) {
     target.innerHTML = `
-      <p class="muted">还没有候选论证树。先运行 Part 3 的 seed map、generate、compare。</p>
+      <p class="muted">还没有候选论证树。先运行阶段 3 的 seed map、候选生成与比较。</p>
     `;
     return;
   }
@@ -519,7 +692,7 @@ function renderPart3Candidates() {
         <div class="candidate-head">
           <div>
             <div class="candidate-id">${escapeHtml(candidateId)}</div>
-            <p class="muted">${escapeHtml(readableStrategy(candidate.strategy))} · score ${score}</p>
+            <p class="muted">${escapeHtml(readableStrategy(candidate.strategy))} · 得分 ${score}</p>
           </div>
           <div>
             ${isRecommended ? '<span class="badge ok">推荐</span>' : ""}
@@ -566,32 +739,115 @@ function renderReferences() {
   const meta = $("#referenceMeta");
   const snapshot = appState.data?.part1_references || {};
   const references = snapshot.references || [];
-  meta.textContent = references.length ? `${snapshot.total || references.length} 个下载文件，${snapshot.accepted_count || 0} 个 accepted` : "";
+  meta.textContent = references.length ? `${snapshot.total || references.length} 个下载文件，${snapshot.accepted_count || 0} 个已接受来源` : "";
   if (!references.length) {
-    list.innerHTML = `<p class="muted">当前上下文还没有 Part 1 下载文件。</p>`;
+    list.innerHTML = `<p class="muted">当前上下文还没有阶段 1 下载文件。</p>`;
     return;
   }
-  list.innerHTML = references.map((item) => {
-    const status = [item.library_status, item.relevance_tier, item.relevance_score].filter(Boolean).join(" · ");
+  const rows = references.map((item) => {
+    const status = [item.library_status, item.relevance_tier, item.relevance_score]
+      .filter(Boolean)
+      .map(readableReferenceToken)
+      .join(" · ");
     const bibliographic = [item.authors, item.year, item.journal].filter(Boolean).join(" · ");
     return `
-      <article class="reference-item">
-        <span class="reference-file">${escapeHtml(item.file_name || item.source_id || "")}</span>
-        <p class="reference-title">${escapeHtml(item.title || "未记录题名")}</p>
-        <p class="muted">${escapeHtml(bibliographic || item.local_path || "")}</p>
-        <div class="reference-tags">
-          ${item.source_name ? `<span>${escapeHtml(item.source_name)}</span>` : ""}
-          ${item.query_id ? `<span>${escapeHtml(item.query_id)}</span>` : ""}
-          ${status ? `<span>${escapeHtml(status)}</span>` : ""}
-          ${item.local_exists ? "<span>PDF exists</span>" : "<span>PDF missing</span>"}
-        </div>
-      </article>
+      <tr>
+        <td>
+          <strong>${escapeHtml(item.title || "未记录题名")}</strong>
+          <small>${escapeHtml(item.file_name || item.source_id || "")}</small>
+        </td>
+        <td>${escapeHtml(item.source_name || "未记录")}</td>
+        <td>${escapeHtml(bibliographic || "未记录")}</td>
+        <td><span class="ledger-chip">${escapeHtml(status || item.download_status || "待处理")}</span></td>
+        <td>${item.local_exists ? "已落地" : "缺失"}</td>
+      </tr>
     `;
   }).join("");
+  list.innerHTML = `
+    <div class="source-ledger">
+      <table>
+        <thead>
+          <tr>
+            <th>题名与文件</th>
+            <th>来源</th>
+            <th>作者 / 年份 / 期刊</th>
+            <th>状态</th>
+            <th>本地文件</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderPart6Readiness() {
+  const stage = stageStatus("part6");
+  const pending = stage.pending_human_gates || [];
+  const completed = stage.human_gates_completed || [];
+  const readiness = appState.data?.summary?.part5_readiness || "未形成";
+  setText("#readinessVerdict", readiness);
+  setText(
+    "#readinessReason",
+    readiness === "未形成"
+      ? "阶段 5 尚未形成可交接判断，阶段 6 不应启动。"
+      : "这是阶段 5 给出的交接判断，不等于最终提交许可。"
+  );
+
+  const gateList = $("#part6GateList");
+  if (gateList) {
+    const rows = [
+      ["part6_finalization_authorized", "授权进入最终整理"],
+      ["part6_final_decision_confirmed", "确认最终就绪判断与交付包"]
+    ];
+    gateList.innerHTML = rows.map(([gateId, label]) => {
+      const done = completed.includes(gateId);
+      const waiting = pending.includes(gateId);
+      const text = done ? "已记录" : waiting ? "待人工确认" : "未到达";
+      return `
+        <div class="gate-check ${done ? "done" : waiting ? "waiting" : ""}">
+          <span class="material-symbols-outlined">${done ? "check_circle" : "radio_button_unchecked"}</span>
+        <strong>${label}</strong>
+        <small>${text}</small>
+        </div>
+      `;
+    }).join("");
+  }
+
+  const packageList = $("#part6ArtifactList");
+  if (packageList) {
+    const artifacts = (stage.artifacts || []).filter((artifact) => artifact.path?.startsWith("outputs/part6/"));
+    if (!artifacts.length) {
+      packageList.innerHTML = `<p class="muted">阶段 6 产物尚未生成。</p>`;
+    } else {
+      packageList.innerHTML = artifacts.map((artifact) => `
+        <button type="button" class="package-item ${artifact.exists ? "exists" : ""}" ${artifact.exists ? `data-artifact="${escapeHtml(artifact.path)}"` : ""}>
+          <span>${escapeHtml(artifactLabel(artifact.path))}</span>
+          <small>${escapeHtml(artifactStatusText(artifact))}</small>
+        </button>
+      `).join("");
+      packageList.querySelectorAll("[data-artifact]").forEach((element) => {
+        element.addEventListener("click", () => openArtifact(element.getAttribute("data-artifact")));
+      });
+    }
+  }
+
+  const canAuthorize = stageComplete("part5") && pending.includes("part6_finalization_authorized");
+  const canFinalize = stageComplete("part5") && !pending.includes("part6_finalization_authorized") && !stageComplete("part6");
+  const canConfirm = pending.includes("part6_final_decision_confirmed");
+  $("#authorizePart6Button").disabled = !canAuthorize;
+  $("#runPart6Button").disabled = !canFinalize;
+  $("#confirmPart6Button").disabled = !canConfirm;
 }
 
 function renderJobStatusHint(job) {
-  const statusText = `${job.action_id}: ${job.status}`;
+  const statusLabels = {
+    queued: "排队中",
+    running: "运行中",
+    completed: "已完成",
+    failed: "失败"
+  };
+  const statusText = `${readableCommand(job.action_id)}：${statusLabels[job.status] || job.status}`;
   if (job.status === "failed") {
     $("#artifactPreview").textContent = `${statusText}\n${job.error || "动作失败。需要时可在终端查看服务日志 /tmp/research-local-web.log。"}`;
     return;
@@ -602,10 +858,12 @@ function renderJobStatusHint(job) {
 function render() {
   renderContextSelect();
   renderOverview();
+  renderArtifactSummary();
   renderStages();
   renderActions();
   renderIntakeForm();
   renderPart3Candidates();
+  renderPart6Readiness();
   renderReferences();
   renderMemory();
 }
@@ -661,12 +919,12 @@ async function submitIntake(runAfterSave) {
   });
   const payload = await response.json();
   if (!response.ok) {
-    $("#intakeStatus").textContent = payload.error || "Intake 保存失败。";
+    $("#intakeStatus").textContent = payload.error || "研究信息保存失败。";
     return;
   }
   appState.intakeDirty = false;
   appState.jobs.set(payload.job_id, payload);
-  $("#intakeStatus").textContent = runAfterSave ? "已启动：保存、确认 intake、创建 workspace、运行 Part 1。" : "已启动：保存 intake。";
+  $("#intakeStatus").textContent = runAfterSave ? "已启动：保存、确认研究信息、创建隔离工作区、运行阶段 1。" : "已启动：保存研究信息。";
   renderJobStatusHint(payload);
   pollJob(payload.job_id);
 }
@@ -700,12 +958,12 @@ async function openArtifact(path) {
     $("#artifactPreview").textContent = payload.error || "无法读取文件。";
     return;
   }
-  $("#artifactMeta").textContent = `${payload.path} · ${payload.size} bytes${payload.truncated ? " · 已截断" : ""}`;
+  $("#artifactMeta").textContent = `${payload.path} · ${payload.size} 字节${payload.truncated ? " · 已截断" : ""}`;
   $("#artifactPreview").textContent = payload.content;
 }
 
 function escapeHtml(text) {
-  return text
+  return String(text ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
@@ -719,6 +977,9 @@ $("#contextSelect").addEventListener("change", async (event) => {
 $("#refreshButton").addEventListener("click", fetchStatus);
 $("#saveIntakeButton").addEventListener("click", () => submitIntake(false));
 $("#runIntakeButton").addEventListener("click", () => submitIntake(true));
+$("#authorizePart6Button").addEventListener("click", () => runAction("part6-authorize"));
+$("#runPart6Button").addEventListener("click", () => runAction("part6-finalize"));
+$("#confirmPart6Button").addEventListener("click", () => runAction("part6-confirm-final"));
 $("#reloadIntakeButton").addEventListener("click", () => {
   appState.intakeDirty = false;
   renderIntakeForm(true);
@@ -727,7 +988,7 @@ $("#reloadIntakeButton").addEventListener("click", () => {
 $("#intakeForm").querySelectorAll("input, textarea").forEach((element) => {
   element.addEventListener("input", () => {
     appState.intakeDirty = true;
-    $("#intakeStatus").textContent = "Intake 有未保存修改。";
+    $("#intakeStatus").textContent = "研究信息有未保存修改。";
   });
 });
 

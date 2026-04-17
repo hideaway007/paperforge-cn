@@ -3,222 +3,430 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>论文工作台</title>
+    <title>论文全周期工作站</title>
+    <link rel="icon" href="data:,">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;600;700&family=Roboto+Mono:wght@400;500;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    >
     <link rel="stylesheet" href="/static/styles.css">
   </head>
   <body>
-    <header class="topbar">
-      <div class="brand">
-        <img
-          class="brand-mark"
-          alt=""
-          src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAKklEQVR4nGNs6tT5z0AEYBxVSFUBCzYwMDAyMBAbRqNglIwaCjSNAiMAJ3gCgILm8JUAAAAASUVORK5CYII="
-        >
-        <div>
-          <p class="eyebrow">Local Research Console</p>
-          <h1>论文工作台</h1>
+    <div class="console-shell">
+      <aside class="site-nav" aria-label="阶段轨道">
+        <div class="site-brand">
+          <div class="brand-mark-wrap">
+            <img
+              class="brand-mark"
+              alt=""
+              src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAKklEQVR4nGNs6tT5z0AEYBxVSFUBCzYwMDAyMBAbRqNglIwaCjSNAiMAJ3gCgILm8JUAAAAASUVORK5CYII="
+            >
+          </div>
+          <div>
+            <h1>论文全周期工作站</h1>
+            <p>本地论文工作流控制台</p>
+          </div>
         </div>
+
+        <div class="rail-heading">
+          <p class="small-label">阶段轨道</p>
+          <p class="muted">点击阶段查看可用动作与权威产物。</p>
+        </div>
+        <div id="stageBoard" class="stage-board"></div>
+
+        <section class="nav-note">
+          <p class="small-label">硬约束</p>
+          <p>阶段推进以权威产物为准；知网优先、隔离工作区、人工确认点不自动跳过。</p>
+          <div class="nav-tags">
+            <span>知网优先</span>
+            <span>隔离工作区</span>
+            <span>人工确认</span>
+            <span>不自动投稿</span>
+          </div>
+        </section>
+      </aside>
+
+      <div class="app-main">
+        <header class="topbar">
+          <div class="context-cluster">
+            <span id="contextCrumb" class="context-crumb">root / ws_NNN</span>
+            <span id="contextKind" class="status-chip">读取中</span>
+            <nav class="top-tabs" aria-label="工作区视图">
+              <a href="#overview">核心看板</a>
+              <a href="#sources">文献库</a>
+              <a href="#workflow">工作流</a>
+              <a href="#finalization">最终整理</a>
+              <a href="#artifacts">产物核查</a>
+            </nav>
+          </div>
+
+          <div class="context-bar">
+            <span id="liveStatus" class="live-pill">实时更新：开启</span>
+            <span id="lastUpdated" class="last-updated">尚未刷新</span>
+            <label class="context-label" for="contextSelect">当前上下文</label>
+            <select id="contextSelect"></select>
+            <button id="refreshButton" type="button" class="secondary">刷新数据</button>
+          </div>
+        </header>
+
+        <main class="workspace-shell">
+          <section id="overview" class="workspace-header">
+            <div>
+              <p class="small-label">本地工作台</p>
+              <h2>核心看板</h2>
+              <p class="muted">把状态、人工决策、权威产物和下一步动作放在同一个操作面。</p>
+            </div>
+            <div class="header-actions" aria-label="全局状态">
+              <span id="currentStageLabel" class="status-chip neutral">当前阶段：读取中</span>
+              <span id="stageProgress" class="status-chip neutral">完成度：0/6</span>
+            </div>
+          </section>
+
+          <section class="next-action-banner" aria-live="polite">
+            <div class="action-icon">
+              <span class="material-symbols-outlined">lightbulb</span>
+            </div>
+            <div>
+              <p class="small-label">下一步建议</p>
+              <h3 id="nextActionTitle">读取中</h3>
+              <p id="nextActionReason" class="muted">正在读取 runtime/state.json 与权威产物。</p>
+            </div>
+            <div class="path-block">
+              <span class="path-label">当前上下文路径</span>
+              <p id="activePath" class="path-text"></p>
+            </div>
+          </section>
+
+          <section class="dashboard-grid" aria-label="总览指标">
+            <article class="progress-panel">
+              <div class="panel-topline">
+                <div>
+                  <p class="small-label">总进度</p>
+                  <h3>工作流状态</h3>
+                </div>
+                <strong id="progressPercent">0%</strong>
+              </div>
+              <div class="progress-track" aria-hidden="true">
+                <span id="progressFill"></span>
+              </div>
+              <div class="metric-row">
+                <div>
+                  <span id="sourceCount">0</span>
+                  <p>已入库来源</p>
+                </div>
+                <div>
+                  <span id="wikiPages">0</span>
+                  <p>Wiki 页面</p>
+                </div>
+                <div>
+                  <span id="artifactCount">0</span>
+                  <p>已存在产物</p>
+                </div>
+              </div>
+            </article>
+
+            <article class="insight-panel">
+              <span class="material-symbols-outlined">auto_awesome</span>
+              <h3>智能摘要</h3>
+              <p id="workflowDigest">正在归纳当前工作流状态。</p>
+              <a href="#artifacts">查看产物核查</a>
+            </article>
+          </section>
+
+          <section class="artifact-strip" aria-label="当前产出摘要">
+            <div class="section-heading compact">
+              <div>
+                <p class="small-label">当前产出</p>
+                <h3>权威产物摘要</h3>
+              </div>
+              <p class="muted section-note">只展示已存在的阶段产物；点击可进入核查预览。</p>
+            </div>
+            <div id="artifactSummaryList" class="artifact-summary-list"></div>
+          </section>
+
+          <section id="sources" class="source-summary-grid" aria-label="文献来源摘要">
+            <article class="stat-tile">
+              <p class="small-label">来源配额</p>
+              <span id="acceptedCount">0 / 40</span>
+              <p>已接受来源目标为 40 篇。</p>
+            </article>
+            <article class="stat-tile secondary">
+              <p class="small-label">知网占比</p>
+              <span id="cnkiRatio">0%</span>
+              <p>目标区间为 60%-70%。</p>
+            </article>
+            <article class="stat-tile warm">
+              <p class="small-label">真实性</p>
+              <span id="authenticityStatus">待核查</span>
+              <p>真实性报告失败时不能推进。</p>
+            </article>
+            <article class="stat-tile">
+              <p class="small-label">排除来源</p>
+              <span id="excludedCount">0</span>
+              <p>排除记录来自阶段 1 日志。</p>
+            </article>
+          </section>
+
+          <section id="workflow" class="workbench">
+            <section class="paper-tool intake-tool">
+              <div class="section-heading">
+                <div>
+                  <p class="small-label">阶段 1</p>
+                  <h3>研究信息与隔离工作区</h3>
+                </div>
+                <p class="muted section-note">先保存研究信息；需要运行阶段 1 时必须填写决策备注并确认。</p>
+              </div>
+
+              <div class="intake-form" id="intakeForm">
+                <label>研究信息 ID
+                  <input id="intakeId" type="text" placeholder="留空会自动生成">
+                </label>
+                <label>研究题目
+                  <input id="researchTopic" type="text" placeholder="例如：城市公共空间更新机制研究">
+                </label>
+                <label>研究问题
+                  <textarea id="researchQuestion" rows="3" placeholder="用一句话说明论文要解决的问题。"></textarea>
+                </label>
+                <label>核心研究问题（每行一个）
+                  <textarea id="coreQuestions" rows="4"></textarea>
+                </label>
+                <label>学科领域（每行一个）
+                  <textarea id="disciplineFields" rows="3"></textarea>
+                </label>
+                <div class="two-col">
+                  <label>开始年份
+                    <input id="startYear" type="number" min="1900" max="2100">
+                  </label>
+                  <label>结束年份
+                    <input id="endYear" type="number" min="1900" max="2100">
+                  </label>
+                </div>
+                <label>必需关键词（每行一个）
+                  <textarea id="keywordsRequired" rows="4"></textarea>
+                </label>
+                <label>建议关键词（每行一个）
+                  <textarea id="keywordsSuggested" rows="4"></textarea>
+                </label>
+                <label>文献类型（每行一个）
+                  <textarea id="documentTypes" rows="3"></textarea>
+                </label>
+                <label>排除规则（每行一个）
+                  <textarea id="exclusions" rows="3"></textarea>
+                </label>
+                <label>范围说明
+                  <textarea id="scopeNotes" rows="5" placeholder="说明纳入、不纳入、时间范围、材料边界。"></textarea>
+                </label>
+              </div>
+
+              <div class="button-row intake-actions">
+                <button id="saveIntakeButton" type="button" class="secondary">保存研究信息</button>
+                <button id="runIntakeButton" type="button">保存并运行阶段 1</button>
+                <button id="reloadIntakeButton" type="button" class="secondary">重新载入</button>
+              </div>
+              <p id="intakeStatus" class="muted"></p>
+            </section>
+
+            <section class="paper-tool">
+              <div class="section-heading">
+                <div>
+                  <p class="small-label">阶段 3</p>
+                  <h3>候选论证树比较</h3>
+                </div>
+                <p class="muted section-note">只有显式选择才会锁定权威论证树。</p>
+              </div>
+              <div id="candidateOptions" class="candidate-options"></div>
+            </section>
+
+            <section id="finalization" class="paper-tool finalization-tool">
+              <div class="section-heading">
+                <div>
+                  <p class="small-label">阶段 6</p>
+                  <h3>最终整理授权</h3>
+                </div>
+                <p class="muted section-note">可整理不等于可提交；授权最终整理与确认最终决定必须分开记录。</p>
+              </div>
+
+              <div class="finalization-grid">
+                <article class="readiness-panel">
+                  <p class="small-label">阶段 5 交接判断</p>
+                  <strong id="readinessVerdict">-</strong>
+                  <p id="readinessReason" class="muted">等待读取阶段 5 交接判断。</p>
+                </article>
+                <article class="handoff-panel">
+                  <p class="small-label">高风险确认点</p>
+                  <div id="part6GateList" class="gate-checklist"></div>
+                </article>
+                <article class="package-panel">
+                  <p class="small-label">阶段 6 产物</p>
+                  <div id="part6ArtifactList" class="package-list"></div>
+                </article>
+              </div>
+
+              <div class="button-row">
+                <button id="authorizePart6Button" type="button" class="warn">授权阶段 6</button>
+                <button id="runPart6Button" type="button">运行最终整理</button>
+                <button id="confirmPart6Button" type="button" class="danger">确认最终决定</button>
+              </div>
+              <p class="muted finalization-note">系统只在本地生成最终稿、审计与交付包清单；不会执行投稿或提交动作。</p>
+            </section>
+          </section>
+
+          <section id="artifacts" class="artifact-workspace">
+            <section class="file-tree-panel">
+              <div class="section-heading compact">
+                <div>
+                  <p class="small-label">产物资源管理器</p>
+                  <h3>权威产物目录</h3>
+                </div>
+              </div>
+              <div class="artifact-tree">
+                <div class="tree-row root">
+                  <span class="material-symbols-outlined">keyboard_arrow_down</span>
+                  <span>当前上下文</span>
+                </div>
+                <div class="tree-group">
+                  <div class="tree-row">
+                    <span class="material-symbols-outlined">folder_open</span>
+                    <span>阶段产物</span>
+                  </div>
+                  <div class="tree-row">
+                    <span class="material-symbols-outlined">menu_book</span>
+                    <span>研究 Wiki</span>
+                  </div>
+                  <div class="tree-row selected">
+                    <span class="material-symbols-outlined">verified</span>
+                    <span>权威产物</span>
+                  </div>
+                  <div class="tree-row">
+                    <span class="material-symbols-outlined">history</span>
+                    <span>流程记忆</span>
+                  </div>
+                </div>
+              </div>
+              <p class="muted tree-note">点击左侧阶段卡片中的已存在文件，可在右侧预览内容。</p>
+            </section>
+
+            <section class="preview-panel">
+              <div class="section-heading compact">
+                <div>
+                  <p class="small-label">文件预览</p>
+                  <h3>权威产物核查面</h3>
+                </div>
+                <p id="artifactMeta" class="muted"></p>
+              </div>
+              <pre id="artifactPreview" class="preview">点击已存在的权威产物查看内容。</pre>
+            </section>
+          </section>
+
+          <section class="evidence-grid">
+            <section class="paper-tool">
+              <div class="section-heading compact">
+                <div>
+                  <p class="small-label">阶段 1 来源</p>
+                  <h3>已下载文献表</h3>
+                </div>
+                <p id="referenceMeta" class="muted"></p>
+              </div>
+              <div id="referenceList" class="reference-list"></div>
+            </section>
+
+            <section class="paper-tool">
+              <div class="section-heading compact">
+                <div>
+                  <p class="small-label">审计记录</p>
+                  <h3>最近流程记忆</h3>
+                </div>
+              </div>
+              <div id="memoryList" class="memory-list"></div>
+            </section>
+          </section>
+        </main>
       </div>
 
-      <div class="context-bar">
-        <span id="liveStatus" class="live-pill">实时更新：开启</span>
-        <span id="lastUpdated" class="last-updated">尚未刷新</span>
-        <label for="contextSelect">当前上下文</label>
-        <select id="contextSelect"></select>
-        <button id="refreshButton" type="button">刷新</button>
-      </div>
-    </header>
-
-    <main class="shell">
-      <section class="overview-band" aria-live="polite">
-        <div>
-          <p class="small-label">下一步</p>
-          <h2 id="nextActionTitle">读取中</h2>
-          <p id="nextActionReason" class="muted">正在读取 runtime/state.json 与 canonical artifacts。</p>
+      <aside class="action-dock" aria-label="执行与决策中心">
+        <div class="dock-header">
+          <p class="small-label">执行与决策中心</p>
+          <h2>待办决策</h2>
+          <p class="muted">自动化动作与人工确认点在这里分开处理。</p>
         </div>
-        <div class="stats-grid">
-          <div>
-            <span id="sourceCount">0</span>
-            <p>已入库来源</p>
+
+        <section class="decision-card">
+          <div class="decision-icon">
+            <span class="material-symbols-outlined">gavel</span>
           </div>
-          <div>
-            <span id="wikiPages">0</span>
-            <p>Wiki 页面</p>
-          </div>
-          <div>
-            <span id="readinessVerdict">-</span>
-            <p>Part 6 readiness</p>
-          </div>
+          <h3 id="selectedStageTitle">操作</h3>
+          <p class="muted">人工确认点必须写明备注；阶段 6 授权和最终确认是两个独立动作。</p>
+        </section>
+
+        <div class="gate-note">
+          <strong>人工确认点不会自动跳过。</strong>
+          <span>研究信息确认、论证树选择、阶段 6 授权与最终确认都必须显式记录。</span>
         </div>
-      </section>
 
-      <section class="workflow-grid">
-        <section class="workflow-panel intake-panel">
-          <div class="section-heading compact">
-            <div>
-              <p class="small-label">Part 1 Intake</p>
-              <h2>从题目启动</h2>
-            </div>
-            <p class="muted">写入 root 的 `outputs/part1/intake.json`，再创建或复用隔离 workspace，并从 workspace 启动 Part 1。</p>
-          </div>
-
-          <div class="intake-form" id="intakeForm">
-            <label>Intake ID
-              <input id="intakeId" type="text" placeholder="留空会自动生成">
-            </label>
-            <label>研究题目
-              <input id="researchTopic" type="text" placeholder="例如：城市公共空间更新机制研究">
-            </label>
-            <label>研究问题
-              <textarea id="researchQuestion" rows="3" placeholder="用一句话说明论文要解决的问题。"></textarea>
-            </label>
-            <label>核心研究问题（每行一个）
-              <textarea id="coreQuestions" rows="4"></textarea>
-            </label>
-            <label>学科领域（每行一个）
-              <textarea id="disciplineFields" rows="3"></textarea>
-            </label>
-            <div class="two-col">
-              <label>开始年份
-                <input id="startYear" type="number" min="1900" max="2100">
-              </label>
-              <label>结束年份
-                <input id="endYear" type="number" min="1900" max="2100">
-              </label>
-            </div>
-            <label>必需关键词（每行一个）
-              <textarea id="keywordsRequired" rows="4"></textarea>
-            </label>
-            <label>建议关键词（每行一个）
-              <textarea id="keywordsSuggested" rows="4"></textarea>
-            </label>
-            <label>文献类型（每行一个）
-              <textarea id="documentTypes" rows="3"></textarea>
-            </label>
-            <label>排除规则（每行一个）
-              <textarea id="exclusions" rows="3"></textarea>
-            </label>
-            <label>范围说明
-              <textarea id="scopeNotes" rows="5" placeholder="说明纳入、不纳入、时间范围、材料边界。"></textarea>
-            </label>
-          </div>
-
-          <div class="button-row intake-actions">
-            <button id="saveIntakeButton" type="button" class="secondary">保存 intake</button>
-            <button id="runIntakeButton" type="button">保存并运行 Part 1</button>
-            <button id="reloadIntakeButton" type="button" class="secondary">重新载入</button>
-          </div>
-          <p id="intakeStatus" class="muted"></p>
-        </section>
-
-        <section class="workflow-panel">
-          <div class="section-heading compact">
-            <div>
-              <p class="small-label">Part 3 Selection</p>
-              <h2>选择论证树</h2>
-            </div>
-            <p class="muted">点击候选会记录 `argument_tree_selected` 并锁定 canonical argument tree。</p>
-          </div>
-          <div id="candidateOptions" class="candidate-options"></div>
-        </section>
-      </section>
-
-      <section class="main-grid">
-        <section>
-          <div class="section-heading">
-            <div>
-              <p class="small-label">Pipeline</p>
-              <h2>阶段控制</h2>
-            </div>
-            <p id="activePath" class="path-text"></p>
-          </div>
-          <div id="stageBoard" class="stage-board"></div>
-        </section>
-
-        <aside class="control-panel">
-          <div class="section-heading compact">
-            <div>
-              <p class="small-label">Operate</p>
-              <h2 id="selectedStageTitle">操作</h2>
-            </div>
-          </div>
-
-          <div class="gate-note">
-            `intake_confirmed` 和 `argument_tree_selected` 必须由你显式确认；网页只负责记录你的选择。
-          </div>
-
-          <div class="field-row">
-            <label for="notesInput">决策备注</label>
-            <textarea id="notesInput" rows="4" placeholder="写清楚为什么确认，例如：已检查 intake 主题与关键词。"></textarea>
-          </div>
-
-          <div id="part3Decision" class="decision-box hidden">
-            <label for="candidateInput">候选 ID</label>
-            <input id="candidateInput" type="text" value="candidate_theory_first">
-            <label for="candidateSource">候选来源</label>
-            <select id="candidateSource">
-              <option value="original">original</option>
-              <option value="refined">refined</option>
-            </select>
-          </div>
-
-          <div id="part6Decision" class="decision-box hidden">
-            <label for="part6Step">Part 6 step</label>
-            <select id="part6Step">
-              <option value="precheck">precheck</option>
-              <option value="finalize">finalize</option>
-              <option value="audit-claim">audit-claim</option>
-              <option value="audit-citation">audit-citation</option>
-              <option value="package-draft">package-draft</option>
-              <option value="decide">decide</option>
-              <option value="package-final">package-final</option>
-              <option value="all">all</option>
-            </select>
-          </div>
-
-          <label id="forceLine" class="checkbox-line">
-            <input id="forceInput" type="checkbox">
-            允许覆盖已生成草稿（force）
-          </label>
-
-          <div id="actionButtons" class="button-grid"></div>
-        </aside>
-      </section>
-
-      <section class="details-grid">
-        <section>
-          <div class="section-heading compact">
-            <div>
-              <p class="small-label">Artifact</p>
-              <h2>文件预览</h2>
-            </div>
-            <p id="artifactMeta" class="muted"></p>
-          </div>
-          <pre id="artifactPreview" class="preview">点击已存在的 artifact 查看内容。</pre>
-        </section>
-
-        <section>
-          <div class="section-heading compact">
-            <div>
-              <p class="small-label">Part 1 Sources</p>
-              <h2>参考文献</h2>
-            </div>
-            <p id="referenceMeta" class="muted"></p>
-          </div>
-          <div id="referenceList" class="reference-list"></div>
-        </section>
-      </section>
-
-      <section>
-        <div class="section-heading compact">
-          <div>
-            <p class="small-label">Audit</p>
-            <h2>最近 process-memory</h2>
-          </div>
+        <div class="field-row">
+          <label for="notesInput">决策备注</label>
+          <textarea id="notesInput" rows="4" placeholder="写清楚为什么确认，例如：已检查研究主题与关键词。"></textarea>
         </div>
-        <div id="memoryList" class="memory-list"></div>
-      </section>
-    </main>
+
+        <div id="part3Decision" class="decision-box hidden">
+          <label for="candidateInput">候选 ID</label>
+          <input id="candidateInput" type="text" value="candidate_theory_first">
+          <label for="candidateSource">候选来源</label>
+          <select id="candidateSource">
+            <option value="original">原始候选</option>
+            <option value="refined">细化候选</option>
+          </select>
+        </div>
+
+        <div id="part6Decision" class="decision-box hidden">
+          <label for="part6Step">阶段 6 步骤</label>
+          <select id="part6Step">
+            <option value="precheck">只读预检</option>
+            <option value="finalize">生成最终稿</option>
+            <option value="audit-claim">论断风险审计</option>
+            <option value="audit-citation">引用一致性审计</option>
+            <option value="package-draft">生成包草案</option>
+            <option value="decide">生成最终判断</option>
+            <option value="package-final">生成最终包</option>
+            <option value="all">完整运行</option>
+          </select>
+        </div>
+
+        <label id="forceLine" class="checkbox-line">
+          <input id="forceInput" type="checkbox">
+          <span>允许覆盖已生成草稿</span>
+        </label>
+
+        <div id="actionButtons" class="button-grid"></div>
+
+        <section class="dock-feed">
+          <p class="small-label">实时流</p>
+          <div class="feed-item active">
+            <span></span>
+            <div>
+              <strong>状态同步</strong>
+              <p>浏览器会持续读取当前上下文。</p>
+            </div>
+          </div>
+          <div class="feed-item">
+            <span></span>
+            <div>
+              <strong>产物核查</strong>
+              <p>非权威文件不会作为推进依据。</p>
+            </div>
+          </div>
+          <div class="feed-item muted-feed">
+            <span></span>
+            <div>
+              <strong>阶段 6 提醒</strong>
+              <p>可 finalization 不等于可投稿。</p>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </div>
 
     <script src="/static/app.js"></script>
   </body>
