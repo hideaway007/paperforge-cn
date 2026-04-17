@@ -4,7 +4,7 @@
 - **Project**: Thesis Destroyer
 - **Domain**: 全中文学术写作 research-to-manuscript workflow
 - **Baseline Docs**: `docs/01_build_target.md`, `docs/02_architecture.md` 已按当前开源版 workflow 刷新；后续仍需用户明确批准才可修改
-- **Current Effective Workflow Sources**: 当前生效 workflow 以 `AGENTS.md`、`README.md`、`docs/01_build_target.md`、`docs/02_architecture.md`、`docs/part5_architecture.md`、`docs/part6_mvp_architecture.md`、`docs/part6_docx_format_export_architecture.md` 与 runtime gate 校验为准
+- **Current Effective Workflow Sources**: 当前生效 workflow 以 `AGENTS.md`、`README.md`、`docs/01_build_target.md`、`docs/02_architecture.md`、manifests 与 runtime gate 校验为准
 - **2026-04-16 User-Approved Override**: 用户已批准 Part 4 / Part 5 自动化取消人工 gate；该 override 已吸收到当前 baseline docs 与 runtime gate 合同中
 - **MVP Scope**: Part 1（文献收集）→ Part 2（Research Wiki）→ Part 3（Argument Tree）→ Part 4（Paper Outline）→ Part 5 MVP（Draft + Review + Revision）→ Part 6 gated finalization（Final Manuscript + Audit + DOCX Export + Package Decision）
 
@@ -225,7 +225,7 @@ runtime/agents/part6_{business_step}.py
 - Part 1 资料库注册必须生成 `outputs/part1/source_quota_report.json`；未满足 40 篇总量、CNKI 24-28 篇、英文期刊不少于 5 篇时，不得写入或推进 canonical `raw-library/metadata.json`。
 - 网页详情页或开放网页全文可作为本地落地 artifact 进入 `raw-library/web-archives/{source_id}.md`；优先由本地 Google Chrome 的 Obsidian/Web Clipper 插件生成 Markdown，再由 `runtime/agents/web_markdown_archiver.py` 导入仓库并写 provenance。Chrome 插件调用本身不作为 deterministic gate；deterministic 边界是 Markdown 文件导入、路径校验、provenance 与真实性校验。
 - Codex LLM agent role 与 `runtime/agents/*.py` 不是同一层：LLM agent 负责判断、综合、批判和写作建议；runtime script 负责文件落盘、schema 校验、state/gate 写入和 canonical lock。
-- 当前启用的论文 workflow LLM roles 为 `researchagent`、`wikisynthesisagent`、`argumentagent`、`outlineagent`、`writeagent` / `writeragent`、`claimauditor`、`citationauditor`；角色说明见 `docs/llm_agent_architecture.md`。
+- 当前启用的论文 workflow LLM roles 为 `researchagent`、`wikisynthesisagent`、`argumentagent`、`outlineagent`、`writeagent` / `writeragent`、`claimauditor`、`citationauditor`；角色说明已并入 `docs/02_architecture.md` 的 LLM agent boundary。
 - 所有 LLM agent 均不得确认 human gate、不得写 `runtime/state.json`、不得绕过 deterministic validation、不得把 writing-policy 或作者风格材料当作 research evidence、不得新增不可回溯的 source_id / citation / case fact / data / research conclusion。
 - `researchagent` 只负责 Part 1/2 的检索策略、相关性判断、source triage 与研究缺口建议；不得绕过 CNKI 优先策略、真实性校验、去重、provenance 或 intake/workspace gate。
 - `runtime/agents/part2_*.py` 保存 Part 2 Research Wiki 业务 agent 脚本；命名必须表达 wiki 生成、来源映射、health check、validate 或 advance 等论文流程步骤。

@@ -9,7 +9,7 @@ description: 学术研究 workflow Part 4：基于已锁定的 outputs/part3/arg
 
 ## 前置检查
 
-1. 只读历史基线：`docs/01_build_target.md`、`docs/02_architecture.md`。二者是不可改原始设计文档；如其旧 HITL / MVP 表述与当前 workflow 冲突，以 `AGENTS.md`、`manifests/pipeline-stages.json`、`docs/part5_architecture.md` 与 runtime gate 为准，并报告冲突。
+1. 只读当前基线：`docs/01_build_target.md`、`docs/02_architecture.md`。二者已吸收 Part 3 / Part 5 / Part 6 专项架构结论；如与 runtime gate 冲突，以 `AGENTS.md`、`manifests/pipeline-stages.json` 与 runtime gate 为准，并报告冲突。
 2. `outputs/part3/argument_tree.json` 存在，且来自用户选择后的 canonical lock。
 3. `runtime/state.json` 中 Part 3 已完成且 `argument_tree_selected` 已记录；否则停止。
 4. `research-wiki/index.json` 与 `research-wiki/pages/` 可读取，outline 的研究性章节必须能回溯到 wiki 页面和 `source_id`。

@@ -9,7 +9,7 @@ description: 学术研究 workflow Part 4：当 agent 生成或检查 outputs/pa
 
 ## 前置检查
 
-1. 只读历史基线：`docs/01_build_target.md`、`docs/02_architecture.md`。二者是不可改原始设计文档；如其旧 HITL / MVP 表述与当前 workflow 冲突，以 `AGENTS.md`、`manifests/pipeline-stages.json`、`docs/part5_architecture.md` 与 runtime gate 为准，并报告冲突。
+1. 只读当前基线：`docs/01_build_target.md`、`docs/02_architecture.md`。二者已吸收 Part 3 / Part 5 / Part 6 专项架构结论；如与 runtime gate 冲突，以 `AGENTS.md`、`manifests/pipeline-stages.json` 与 runtime gate 为准，并报告冲突。
 2. `outputs/part3/argument_tree.json` 存在，且显示已由 `argument_tree_selected` gate 锁定。
 3. `research-wiki/index.json` 与 `research-wiki/pages/` 可读取，outline 的每个研究性章节都能回溯到 wiki 页面和 `source_id`。
 4. `writing-policy/` 与 `research-wiki/` 必须物理分离；`writing-policy/source_index.json` 是 Part 4 写作规范审计入口，缺失时不能通过 completion gate。导师规范、格式要求、参考案例、rubric 只能作为写作约束，不得作为研究证据。

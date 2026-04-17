@@ -326,7 +326,7 @@
       },
       "format_export": {
         "status": "implemented",
-        "architecture_doc": "docs/part6_docx_format_export_architecture.md",
+        "architecture_doc": "docs/02_architecture.md",
         "format_policy_ref": "writing-policy/rules/scut_course_paper_format.md",
         "project_docx_ref": "outputs/part6/final_manuscript.docx",
         "format_report_ref": "outputs/part6/docx_format_report.json",

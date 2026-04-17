@@ -257,11 +257,11 @@ class LLMAgentConfigContractTests(unittest.TestCase):
                     f"{agent_name} must mention deterministic/runtime ownership boundaries",
                 )
 
-        architecture_doc = PROJECT_ROOT / "docs" / "llm_agent_architecture.md"
+        architecture_doc = PROJECT_ROOT / "docs" / "02_architecture.md"
         self.assertTrue(architecture_doc.exists())
         architecture_text = architecture_doc.read_text(encoding="utf-8")
-        self.assertIn("Codex LLM agent role", architecture_text)
-        self.assertIn("Deterministic runtime script", architecture_text)
+        self.assertIn("LLM agent roles", architecture_text)
+        self.assertIn("runtime scripts", architecture_text)
 
     def test_claim_and_citation_auditors_are_report_only(self):
         for agent_name in REPORT_ONLY_AUDITORS:

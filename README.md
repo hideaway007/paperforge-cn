@@ -229,12 +229,8 @@ Part 6 当前在 active `STAGE_ORDER` 中，但它不是自动投稿系统：
 
 - [docs/01_build_target.md](docs/01_build_target.md)：当前开源版目标合同，已吸收 Part 3 / Part 5 / Part 6 / DOCX 导出架构结论。
 - [docs/02_architecture.md](docs/02_architecture.md)：当前开源版架构合同，已吸收 Part 3 / Part 5 / Part 6 / DOCX 导出架构结论。
-- [docs/part3_argumentagent_architecture.md](docs/part3_argumentagent_architecture.md)：Part 3 LLM `argumentagent` 生成候选论点、密度校验与人工选择边界。
-- [docs/part5_architecture.md](docs/part5_architecture.md)：Part 5 写作、review、revision 与本地产物合同。
-- [docs/part6_mvp_architecture.md](docs/part6_mvp_architecture.md)：当前 Part 6 MVP finalization surface、gate、artifact 与 CLI 合同。
-- [docs/part6_docx_format_export_architecture.md](docs/part6_docx_format_export_architecture.md)：Part 6 SCUT docx 格式导出合同，封面不纳入，桌面副本使用论文题目命名。
-- [docs/part6_architecture.md](docs/part6_architecture.md)：Part 6 总体架构说明，当前实现以 MVP 文档和 runtime gate 为准。
-- [docs/llm_agent_architecture.md](docs/llm_agent_architecture.md)：LLM agent 角色与 deterministic runtime script 的职责分层。
+
+此前的 Part 3 / Part 5 / Part 6 专项 architecture 文档已同步并入 `docs/01_build_target.md` 与 `docs/02_architecture.md`，不再作为独立文档保留。
 
 ## 核心原则
 
