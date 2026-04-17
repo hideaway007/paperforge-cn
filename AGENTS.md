@@ -1,7 +1,7 @@
-# AGENTS.md — 论文毁灭者
+# AGENTS.md — Thesis Destroyer
 
 ## Project Identity
-- **Project**: 论文毁灭者
+- **Project**: Thesis Destroyer
 - **Domain**: 全中文学术写作 research-to-manuscript workflow
 - **Historical Baseline Docs**: `docs/01_build_target.md`, `docs/02_architecture.md` 是不可改的原始设计文档 / 历史基线，不再作为无条件当前 workflow truth source
 - **Current Effective Workflow Sources**: 当前生效 workflow 以 `AGENTS.md`、`manifests/pipeline-stages.json`、`docs/part5_architecture.md`、`docs/part6_mvp_architecture.md`、`docs/part6_docx_format_export_architecture.md` 与 runtime gate 校验为准
