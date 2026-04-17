@@ -12,8 +12,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PART3_ARGUMENT_GENERATE_SKILL = (
     PROJECT_ROOT / "skills" / "part3-argument-generate" / "SKILL.md"
 )
+ARGUMENTAGENT_CODEX_ADAPTER = PROJECT_ROOT / "runtime" / "agents" / "argumentagent_codex_cli.py"
 PART3_SKILLS = [
     "part3-argument-generate",
+    "part3-argument-divergent-generate",
     "part3-argument-compare",
     "part3-argument-stress-test",
     "part3-argument-refine",
@@ -79,6 +81,12 @@ class ArgumentAgentConfigTests(unittest.TestCase):
             skill_file = PROJECT_ROOT / "skills" / skill_name / "SKILL.md"
             self.assertTrue(skill_file.exists(), f"Missing required skill: {skill_file}")
 
+    def test_argumentagent_codex_adapter_exists(self):
+        adapter_text = self.load_text(ARGUMENTAGENT_CODEX_ADAPTER)
+        self.assertIn("artifacts.candidate_trees", adapter_text)
+        self.assertIn("argumentagent.toml", adapter_text)
+        self.assertIn("Do not write files", adapter_text)
+
     def test_argumentagent_hard_boundaries_are_explicit(self):
         agent_config = self.load_toml(ARGUMENT_AGENT_CONFIG)
         normalized_instructions = agent_config.get("developer_instructions", "").lower()
@@ -129,6 +137,8 @@ class ArgumentAgentConfigTests(unittest.TestCase):
             "existing outputs/part3/argument_seed_map.json",
             "existing deterministic seed map",
             "deterministic script",
+            "正式 part 3 候选论点必须由 llm 生成",
+            "--allow-deterministic-fallback",
             "python3 cli.py part3-seed-map",
             "source_ids",
             "wiki_page_ids",

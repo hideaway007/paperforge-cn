@@ -19,7 +19,7 @@ Commands:
   part2-generate              生成 Part 2 Research Wiki 草稿（不自动推进 Part 2）
   part2-health                检查 Part 2 wiki / writing-policy 是否可进入 Part 3
   part3-seed-map              生成 Part 3 argument seed map
-  part3-generate              生成 3 份候选 argument tree
+  part3-generate              调用 LLM argumentagent 生成 3 份候选 argument tree
   part3-compare               生成候选 comparison
   part3-refine                基于 seed map 和 comparison 生成 refined candidates
   part3-review                查看候选比较与人工选择入口
@@ -318,6 +318,8 @@ def cmd_part3_generate(args):
         script_args.extend(["--project-root", args.project_root])
     if args.allow_wiki_fallback:
         script_args.append("--allow-wiki-fallback")
+    if args.allow_deterministic_fallback:
+        script_args.append("--allow-deterministic-fallback")
     _run_agent_script("part3_candidate_generator.py", *script_args)
 
 
@@ -742,7 +744,9 @@ def main():
     p_part3_generate.add_argument("--project-root", metavar="PATH",
                                   help="透传给 Part 3 generator 的项目根目录")
     p_part3_generate.add_argument("--allow-wiki-fallback", action="store_true",
-                                  help="允许缺少 argument_seed_map.json 时从 Part 2 wiki 保守生成")
+                                  help="仅配合 --allow-deterministic-fallback 做离线 wiki fallback；正式 Part 3 不使用")
+    p_part3_generate.add_argument("--allow-deterministic-fallback", action="store_true",
+                                  help="显式允许离线 deterministic fallback；正式 Part 3 论点应由 LLM argumentagent 生成")
 
     p_part3_seed_map = sub.add_parser("part3-seed-map", help="生成 Part 3 argument seed map")
     p_part3_seed_map.add_argument("--project-root", metavar="PATH",

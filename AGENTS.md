@@ -238,7 +238,7 @@ runtime/agents/part6_{business_step}.py
 - Part 2 自动化不得自动推进 Part 3；必须通过 part2-health/validate/advance 的 gate 流程，且 gate 结果记录至 `process-memory/` 后才能进入 Part 3。
 - `wikisynthesisagent` 只负责 Part 2 的 research wiki 综合判断与页面草案建议；canonical `research-wiki/index.json`、source mapping、health check 与 update log integrity 仍由 deterministic Part 2 自动化负责。
 - `runtime/agents/part3_*.py` 保存 Part 3 业务 agent 脚本；命名必须表达论文流程步骤，如 candidate generation、comparison、human selection。
-- Part 3 允许使用 LLM `argumentagent` 提升候选论证树质量；`argumentagent` 只负责候选论证设计、比较、压力测试和 refined candidate proposal，不拥有 canonical artifact。
+- Part 3 候选论点与候选论证树必须由 LLM `argumentagent` 生成；deterministic scripts 只负责输入打包、seed map、密度/溯源/schema 校验、候选文件落盘和 human selection 后的 canonical lock，不得默认代写论点。
 - Part 3 deterministic scripts 继续负责 seed map、schema 校验、source/wiki 回溯、候选文件落盘和 human selection 后的 canonical lock。
 - `argumentagent` 必须使用 `part3-argument-generate`、`part3-argument-compare`、`part3-argument-stress-test`、`part3-argument-refine` 与 `part3-human-selection` 的边界；不得绕过这些 skill 直接写 canonical。
 - 新增 Part 3 自动化不得直接写入 canonical `outputs/part3/argument_tree.json`，除非用户已经通过 human selection 接口明确选择候选树。

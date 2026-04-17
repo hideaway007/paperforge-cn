@@ -2,7 +2,7 @@
 """
 runtime/agents/part3_candidate_generator.py
 
-Deterministic MVP generator for Part 3 candidate argument trees.
+LLM-first generator for Part 3 candidate argument trees.
 
 用法：
   python3 runtime/agents/part3_candidate_generator.py
@@ -28,8 +28,19 @@ CANDIDATE_DIR = "outputs/part3/candidate_argument_trees"
 ARGUMENT_SEED_MAP_REF = "outputs/part3/argument_seed_map.json"
 ARGUMENTAGENT_DESIGN_REF = "outputs/part3/argumentagent_candidate_design.json"
 ARGUMENTAGENT_PROVENANCE_REF = "outputs/part3/argumentagent_provenance.json"
+ARGUMENTAGENT_COMMAND_ENV = "RTM_ARGUMENTAGENT_COMMAND"
 STRATEGIES = ("theory_first", "problem_solution", "case_application")
 STATE_REF = "runtime/state.json"
+VIEWPOINT_NODE_TYPES = {"thesis", "main_argument", "sub_argument", "counterargument", "rebuttal"}
+DENSITY_MINIMUMS = {
+    "total_nodes": 12,
+    "viewpoint_nodes": 9,
+    "main_argument_nodes": 3,
+    "sub_argument_nodes": 6,
+    "counterargument_nodes": 1,
+    "rebuttal_nodes": 1,
+    "innovation_type_count": 4,
+}
 SEED_TRACE_SECTIONS = (
     "candidate_claims",
     "evidence_points",
@@ -256,6 +267,50 @@ def validate_llm_node_trace(
         )
 
 
+def collect_argument_nodes(node: dict[str, Any]) -> list[dict[str, Any]]:
+    nodes = [node]
+    for child in node.get("children", []) or []:
+        if isinstance(child, dict):
+            nodes.extend(collect_argument_nodes(child))
+    return nodes
+
+
+def argument_density_counts(root: dict[str, Any]) -> dict[str, Any]:
+    nodes = collect_argument_nodes(root)
+    node_types = [str(node.get("node_type", "")) for node in nodes]
+    innovation_types = sorted({
+        flag.split(":", 1)[1]
+        for node in nodes
+        for flag in node.get("risk_flags", []) or []
+        if isinstance(flag, str) and flag.startswith("innovation_type:")
+    })
+    return {
+        "total_nodes": len(nodes),
+        "viewpoint_nodes": sum(1 for node_type in node_types if node_type in VIEWPOINT_NODE_TYPES),
+        "main_argument_nodes": node_types.count("main_argument"),
+        "sub_argument_nodes": node_types.count("sub_argument"),
+        "counterargument_nodes": node_types.count("counterargument"),
+        "rebuttal_nodes": node_types.count("rebuttal"),
+        "innovation_type_count": len(innovation_types),
+        "innovation_types": innovation_types,
+    }
+
+
+def validate_candidate_density(root: dict[str, Any], candidate_id: str) -> None:
+    counts = argument_density_counts(root)
+    issues = [
+        f"{key}={counts[key]} < {minimum}"
+        for key, minimum in DENSITY_MINIMUMS.items()
+        if counts[key] < minimum
+    ]
+    if issues:
+        raise RuntimeError(
+            f"argumentagent candidate density too low [{candidate_id}]: "
+            + "; ".join(issues)
+            + "；请按 part3-argument-divergent-generate 生成更发散的论点池和候选树。"
+        )
+
+
 def normalize_llm_candidates(
     raw_candidates: list[dict[str, Any]],
     *,
@@ -297,6 +352,7 @@ def normalize_llm_candidates(
             seed_trace=seed_trace,
             path=f"{candidate_id}.root",
         )
+        validate_candidate_density(root, candidate_id)
         candidate.update({
             "schema_version": candidate.get("schema_version") or SCHEMA_VERSION,
             "candidate_id": candidate_id,
@@ -332,10 +388,16 @@ def generate_candidates_with_argumentagent(
             ARGUMENT_SEED_MAP_REF,
             "raw-library/metadata.json",
             "writing-policy/source_index.json",
+            "skills/part3-argument-divergent-generate/SKILL.md",
+            "skills/part3-argument-divergent-generate/references/repository_argument_density.md",
         ],
         instructions=[
             "Read the existing deterministic argument_seed_map.json and design exactly three candidate argument trees.",
             "Return JSON with artifacts.candidate_trees as an array of candidate_theory_first, candidate_problem_solution, and candidate_case_application.",
+            "Apply part3-argument-divergent-generate: build an argument pool first, then produce denser candidate trees.",
+            "Each candidate should normally contain 12-18 total nodes and 9-13 viewpoint nodes including thesis, main_argument, sub_argument, counterargument, and rebuttal.",
+            "Each main_argument should have at least two sub_argument children unless the seed map is too small; weak novelty must be marked as innovation_hypothesis or requires_evidence_followup.",
+            "Cover at least four innovation types across the three candidates, such as concept_reframe, contradiction_finding, scale_shift, method_transfer, case_boundary, policy_or_practice_mechanism, and counter_position.",
             "Do not generate, rewrite, repair, or own argument_seed_map.json.",
             "Do not write canonical outputs/part3/argument_tree.json or human_selection_feedback.json.",
             "Every node must include support_source_ids and wiki_page_ids traceable to research-wiki/index.json.",
@@ -630,7 +692,16 @@ def counterargument_for_strategy(strategy: str, seed_map: dict[str, Any] | None)
         "problem_solution": "反方限制：问题意识不能后置包装材料；",
         "case_application": "反方限制：案例不能被过度外推；",
     }.get(strategy, "反方限制：")
-    return seed_ref_node("counter_001", "counterargument", candidates[0], prefix)
+    counter_node = seed_ref_node("counter_001", "counterargument", candidates[0], prefix)
+    counter_node["children"] = [
+        seed_ref_node(
+            "rebuttal_001",
+            "rebuttal",
+            candidates[0],
+            "回应：该限制应作为论证外推边界进入后续大纲，而不是取消主论点；",
+        )
+    ]
+    return counter_node
 
 
 def apply_seed_map(root: dict[str, Any], strategy: str, seed_map: dict[str, Any] | None) -> dict[str, Any]:
@@ -674,6 +745,53 @@ def evidence_node(node_id: str, pages: list[dict[str, Any]], focus: str) -> dict
     )
 
 
+def sub_argument_node(
+    node_id: str,
+    pages: list[dict[str, Any]],
+    claim: str,
+    evidence_focus: str,
+    *,
+    risk_flags: list[str] | None = None,
+    notes: str = "",
+) -> dict[str, Any]:
+    evidence_suffix = re.sub(r"^sub_", "", node_id)
+    evidence_id = f"evidence_{evidence_suffix}"
+    node = make_node(
+        node_id=node_id,
+        claim=claim,
+        node_type="sub_argument",
+        pages=pages,
+        children=[evidence_node(evidence_id, pages, evidence_focus)],
+        notes=notes,
+    )
+    if risk_flags:
+        node["risk_flags"] = unique_strings(list(node.get("risk_flags", [])) + risk_flags)
+        node["limitations"] = unique_strings(
+            list(node.get("limitations", []))
+            + ["该创新型分论点需要在 Part 4/Part 5 中保持证据边界，证据不足时应降级为研究假说。"]
+        )
+    return node
+
+
+def divergent_children(
+    base_id: str,
+    pages: list[dict[str, Any]],
+    specs: list[tuple[str, str, list[str]]],
+) -> list[dict[str, Any]]:
+    children: list[dict[str, Any]] = []
+    for index, (claim, evidence_focus, risk_flags) in enumerate(specs, start=1):
+        children.append(
+            sub_argument_node(
+                f"sub_{base_id}_{index}",
+                pages,
+                claim,
+                evidence_focus,
+                risk_flags=risk_flags,
+            )
+        )
+    return children
+
+
 def build_theory_first(pages: list[dict[str, Any]]) -> dict[str, Any]:
     groups = group_pages(pages)
     subject = thesis_subject(pages)
@@ -689,21 +807,66 @@ def build_theory_first(pages: list[dict[str, Any]]) -> dict[str, Any]:
             f"首先需要以{titles(concept_pages, '核心概念')}界定论文的理论边界，避免把地域文化表征直接等同于空间机制。",
             "main_argument",
             concept_pages,
-            [evidence_node("evidence_001_1", concept_pages, "理论边界需要由可回溯的概念页支撑")],
+            divergent_children(
+                "001",
+                concept_pages,
+                [
+                    (
+                        f"{titles(concept_pages, '核心概念')}不只是背景概念，而应被重组为论文的分析边界。",
+                        "概念重组需要由可回溯的概念页支撑",
+                        ["innovation_type:concept_reframe"],
+                    ),
+                    (
+                        "理论边界还应主动排除仅停留在文化表征描述的解释路径。",
+                        "理论边界需要说明哪些材料不能直接升级为机制判断",
+                        ["innovation_type:contradiction_finding"],
+                    ),
+                ],
+            ),
         ),
         make_node(
             "arg_002",
             f"其次应通过{titles(method_pages, '方法与结构分析')}解释{subject}从材料描述走向论证分析的路径。",
             "main_argument",
             method_pages,
-            [evidence_node("evidence_002_1", method_pages, "方法页承担从材料到分析框架的转换")],
+            divergent_children(
+                "002",
+                method_pages,
+                [
+                    (
+                        "方法页应被转译为可操作的分析维度，而不是只作为研究方法说明。",
+                        "方法页承担从材料到分析框架的转换",
+                        ["innovation_type:method_transfer"],
+                    ),
+                    (
+                        f"{subject}的解释应在对象、空间、使用或制度尺度之间建立转换关系。",
+                        "尺度转换需要由方法或主题页限定适用范围",
+                        ["innovation_type:scale_shift", "innovation_hypothesis"],
+                    ),
+                ],
+            ),
         ),
         make_node(
             "arg_003",
             f"最后将{titles(topic_pages, '主题证据')}转化为当代中文论文中的章节论证线索。",
             "main_argument",
             topic_pages,
-            [evidence_node("evidence_003_1", topic_pages, "主题页提供论文主线的应用场景")],
+            divergent_children(
+                "003",
+                topic_pages,
+                [
+                    (
+                        "主题证据应形成章节之间的递进关系，而不是并列材料清单。",
+                        "主题页提供论文主线的应用场景",
+                        ["innovation_type:argument_sequence"],
+                    ),
+                    (
+                        "应用性结论必须保留材料边界，避免由局部材料推出普遍机制。",
+                        "主题或案例材料需要设置外推边界",
+                        ["innovation_type:case_boundary"],
+                    ),
+                ],
+            ),
         ),
     ]
     return {
@@ -733,21 +896,66 @@ def build_problem_solution(pages: list[dict[str, Any]]) -> dict[str, Any]:
             f"现有讨论的主要问题在于{titles(contradiction_pages, '研究问题')}尚未被组织成清晰的论文矛盾。",
             "main_argument",
             contradiction_pages,
-            [evidence_node("evidence_001_1", contradiction_pages, "问题诊断必须来自 wiki 中已有的主题或矛盾页")],
+            divergent_children(
+                "001",
+                contradiction_pages,
+                [
+                    (
+                        "论文应先把材料中的矛盾转化为研究问题，而不是直接进入价值判断。",
+                        "问题诊断必须来自 wiki 中已有的主题或矛盾页",
+                        ["innovation_type:contradiction_finding"],
+                    ),
+                    (
+                        "问题意识需要区分事实缺口、解释缺口与方法缺口，避免单一问题统摄全部材料。",
+                        "证据缺口需要被拆分为不同研究债务",
+                        ["innovation_type:evidence_gap_typology", "innovation_hypothesis"],
+                    ),
+                ],
+            ),
         ),
         make_node(
             "arg_002",
             f"解决路径应回到{titles(concept_pages, '核心概念')}，把对象、元素与应用机制拆分为可论证的层级。",
             "main_argument",
             concept_pages,
-            [evidence_node("evidence_002_1", concept_pages, "概念页用于拆解问题而不是堆叠背景")],
+            divergent_children(
+                "002",
+                concept_pages,
+                [
+                    (
+                        "核心概念应承担分层功能，把对象、机制、价值与应用场景区分开。",
+                        "概念页用于拆解问题而不是堆叠背景",
+                        ["innovation_type:concept_reframe"],
+                    ),
+                    (
+                        "概念拆解后应形成可检验的中介机制，说明材料如何通向论文结论。",
+                        "概念页需要与机制判断建立中介关系",
+                        ["innovation_type:policy_or_practice_mechanism", "innovation_hypothesis"],
+                    ),
+                ],
+            ),
         ),
         make_node(
             "arg_003",
             f"最终通过{titles(method_pages, '方法证据')}形成从问题诊断到设计启示的闭环。",
             "main_argument",
             method_pages,
-            [evidence_node("evidence_003_1", method_pages, "方法或证据聚合页用于完成解决方案闭环")],
+            divergent_children(
+                "003",
+                method_pages,
+                [
+                    (
+                        "解决方案必须经过方法验证，避免把写作建议误认为研究结论。",
+                        "方法或证据聚合页用于完成解决方案闭环",
+                        ["innovation_type:method_transfer"],
+                    ),
+                    (
+                        "闭环结论应预留反方解释，说明哪些替代路径仍可能成立。",
+                        "解决路径需要处理竞争解释",
+                        ["innovation_type:counter_position"],
+                    ),
+                ],
+            ),
         ),
     ]
     return {
@@ -777,21 +985,66 @@ def build_case_application(pages: list[dict[str, Any]]) -> dict[str, Any]:
             f"以{titles(case_pages, '案例材料')}为起点，可以让论文先建立可观察的对象与实践场景。",
             "main_argument",
             case_pages,
-            [evidence_node("evidence_001_1", case_pages, "案例页提供具体对象与经验材料")],
+            divergent_children(
+                "001",
+                case_pages,
+                [
+                    (
+                        "案例材料应先被界定为观察窗口，而不是直接代表研究对象整体。",
+                        "案例页提供具体对象与经验材料",
+                        ["innovation_type:case_boundary"],
+                    ),
+                    (
+                        "案例中的使用、空间或实践情境可以作为机制假说的生成入口。",
+                        "案例材料可生成机制假说但不能直接证明普遍规律",
+                        ["innovation_type:policy_or_practice_mechanism", "innovation_hypothesis"],
+                    ),
+                ],
+            ),
         ),
         make_node(
             "arg_002",
             f"案例分析需要借助{titles(method_pages, '分析方法')}提取组织方式、应用路径与转化关系。",
             "main_argument",
             method_pages,
-            [evidence_node("evidence_002_1", method_pages, "方法页把案例观察转为可比较的分析指标")],
+            divergent_children(
+                "002",
+                method_pages,
+                [
+                    (
+                        "方法页应把案例观察拆为可比较指标，使案例不只承担描述功能。",
+                        "方法页把案例观察转为可比较的分析指标",
+                        ["innovation_type:method_transfer"],
+                    ),
+                    (
+                        "案例分析应在微观对象与宏观结论之间设置尺度转换阈值。",
+                        "尺度转换阈值需要由方法页或证据聚合页限定",
+                        ["innovation_type:scale_shift", "innovation_hypothesis"],
+                    ),
+                ],
+            ),
         ),
         make_node(
             "arg_003",
             f"应用层应回扣{titles(concept_pages, '概念依据')}，说明案例经验如何转化为论文结论。",
             "main_argument",
             concept_pages,
-            [evidence_node("evidence_003_1", concept_pages, "概念页保证案例推论不会停留在描述层面")],
+            divergent_children(
+                "003",
+                concept_pages,
+                [
+                    (
+                        "应用结论应回到概念边界，说明案例经验能够转译的部分与不能转译的部分。",
+                        "概念页保证案例推论不会停留在描述层面",
+                        ["innovation_type:concept_reframe"],
+                    ),
+                    (
+                        "结论应主动回应“案例经验是否可迁移”的反方问题。",
+                        "案例迁移需要设置反方位置",
+                        ["innovation_type:counter_position"],
+                    ),
+                ],
+            ),
         ),
     ]
     return {
@@ -848,6 +1101,7 @@ def generate_candidates(
     generated_at: str | None = None,
     *,
     allow_wiki_fallback: bool = False,
+    allow_deterministic_fallback: bool = False,
 ) -> list[dict[str, Any]]:
     assert_part2_gate_passed(project_root)
     wiki_index, pages = load_wiki_pages(project_root)
@@ -862,11 +1116,37 @@ def generate_candidates(
             seed_map=seed_map,
             generated_at=timestamp,
         )
+    if candidates is None and not allow_deterministic_fallback:
+        if seed_map is None:
+            raise RuntimeError(
+                "Part 3 candidate generation requires LLM argumentagent and "
+                f"{ARGUMENT_SEED_MAP_REF}. 先运行 `python3 cli.py part3-seed-map`；"
+                "不要用 wiki fallback 生成正式论点。"
+            )
+        raise RuntimeError(
+            "Part 3 candidate generation requires LLM argumentagent output. "
+            f"请配置 {ARGUMENTAGENT_COMMAND_ENV}，例如指向一个读取 stdin JSON、输出 "
+            "artifacts.candidate_trees 的 argumentagent 适配器；"
+            "只有离线调试才使用 --allow-deterministic-fallback。"
+        )
     if candidates is None:
         candidates = [
             build_candidate(strategy, wiki_index, pages, timestamp, seed_map=seed_map)
             for strategy in STRATEGIES
         ]
+        write_llm_agent_provenance(
+            project_root,
+            ARGUMENTAGENT_PROVENANCE_REF,
+            agent_name="argumentagent",
+            task="part3_candidate_argument_design",
+            skill="part3-argument-generate",
+            output_ref=CANDIDATE_DIR,
+            mode="deterministic_fallback",
+            fallback_reason=(
+                "explicit --allow-deterministic-fallback used; "
+                "formal Part 3 argument generation should use LLM argumentagent"
+            ),
+        )
     for candidate in candidates:
         output_path = output_dir / f"{candidate['candidate_id']}.json"
         write_json(output_path, candidate)
@@ -874,12 +1154,17 @@ def generate_candidates(
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate three deterministic Part 3 argument tree candidates.")
+    parser = argparse.ArgumentParser(description="Generate three LLM-designed Part 3 argument tree candidates.")
     parser.add_argument("--project-root", default=str(PROJECT_ROOT), help="Project root; defaults to repository root.")
     parser.add_argument(
         "--allow-wiki-fallback",
         action="store_true",
-        help="Allow conservative generation directly from Part 2 wiki when argument_seed_map.json is missing.",
+        help="Allow offline wiki fallback only together with --allow-deterministic-fallback; not valid for formal Part 3 argument generation.",
+    )
+    parser.add_argument(
+        "--allow-deterministic-fallback",
+        action="store_true",
+        help="Explicitly allow offline deterministic fallback. Formal Part 3 candidate arguments should use LLM argumentagent.",
     )
     return parser.parse_args(argv)
 
@@ -891,6 +1176,7 @@ def main(argv: list[str] | None = None) -> int:
         candidates = generate_candidates(
             project_root=project_root,
             allow_wiki_fallback=args.allow_wiki_fallback,
+            allow_deterministic_fallback=args.allow_deterministic_fallback,
         )
     except Exception as exc:
         print(f"[ERR] Part 3 candidate generation failed: {exc}", file=sys.stderr)

@@ -1,10 +1,10 @@
 # Part 3 ArgumentAgent Architecture
 
-> This document extends Part 3 without changing the immutable truth-source docs. It defines how an LLM argument agent may improve argument quality while deterministic scripts keep evidence and gate boundaries intact.
+> This document extends Part 3 without changing the immutable truth-source docs. It defines how LLM `argumentagent` owns candidate argument generation while deterministic scripts keep evidence, validation, file writes, and gate boundaries intact.
 
 ## 1. Design Judgment
 
-Argument tree quality should not depend only on deterministic scripts. Scripts are good at repeatability, schema compliance, source tracing, and canonical locking, but weak at thesis formulation, warrant design, counterargument handling, and route-level judgment.
+Argument tree quality must not depend on deterministic scripts to invent the argument. Scripts are good at repeatability, schema compliance, source tracing, density checks, and canonical locking, but weak at thesis formulation, warrant design, counterargument handling, and route-level judgment.
 
 Part 3 therefore uses a layered model:
 
@@ -26,7 +26,7 @@ deterministic seed map
 | Candidate design | `argumentagent` | Build genuinely different argument routes from the seed map |
 | Quality attack | `argumentagent` | Find logical jumps, missing warrants, overclaims, weak counterarguments and case overextension |
 | Candidate refinement | `argumentagent` | Produce refined candidate proposals without overwriting originals |
-| Schema and traceability | deterministic script | Validate required fields, source IDs, wiki page IDs and file layout |
+| Density, schema and traceability | deterministic script | Validate required fields, argument density, source IDs, wiki page IDs and file layout |
 | Canonical selection | user + deterministic script | Lock `outputs/part3/argument_tree.json` only after explicit human selection |
 
 ## 3. ArgumentAgent Scope
@@ -65,7 +65,8 @@ deterministic seed map
 ## 5. Correct Operating Sequence
 
 1. Run deterministic seed extraction through `python3 cli.py part3-seed-map`.
-2. Use `argumentagent` with `part3-argument-generate` to design three candidate routes from the seed map.
+2. Use `argumentagent` with `part3-argument-generate` and `part3-argument-divergent-generate` to design three dense, genuinely different candidate routes from the seed map.
+   - Local Codex adapter: `RTM_ARGUMENTAGENT_COMMAND="python3 runtime/agents/argumentagent_codex_cli.py"`.
 3. Use `argumentagent` with `part3-argument-stress-test` to attack the candidates.
 4. Use `argumentagent` with `part3-argument-compare` to compare candidate tradeoffs.
 5. Use `argumentagent` with `part3-argument-refine` when quality report exposes fixable route-level issues.
@@ -74,4 +75,4 @@ deterministic seed map
 
 ## 6. Why This Is Better
 
-The LLM handles the part that needs judgment: thesis shape, route difference, warrants, counterarguments, limitations, and explanation strength. The scripts handle the part that must be deterministic: file ownership, schema, source traceability, state, and human gate enforcement.
+The LLM handles the part that needs judgment: thesis shape, route difference, warrants, counterarguments, limitations, innovation hypotheses, and explanation strength. The scripts handle the part that must be deterministic: file ownership, argument density checks, schema, source traceability, state, and human gate enforcement.

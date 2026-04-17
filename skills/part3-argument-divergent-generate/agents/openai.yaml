@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 3 Argument Divergence"
+  short_description: "Expand Part 3 argument density and novelty"
+  default_prompt: "Use $part3-argument-divergent-generate before Part 3 candidate generation to expand argument options, novelty angles, and evidence-bounded hypotheses without bypassing source traceability or human selection."

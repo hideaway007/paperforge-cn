@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -13,6 +14,7 @@ COMPARISON_GENERATOR_PATH = PROJECT_ROOT / "runtime" / "agents" / "part3_compari
 SELECTION_LOCKER_PATH = PROJECT_ROOT / "runtime" / "agents" / "part3_selection_locker.py"
 SEED_MAP_GENERATOR_PATH = PROJECT_ROOT / "runtime" / "agents" / "part3_argument_seed_map_generator.py"
 REFINER_PATH = PROJECT_ROOT / "runtime" / "agents" / "part3_argument_refiner.py"
+PROFILER_PATH = PROJECT_ROOT / "runtime" / "agents" / "part3_argument_density_profiler.py"
 PIPELINE_PATH = PROJECT_ROOT / "runtime" / "pipeline.py"
 PART3_SCHEMA_PATH = PROJECT_ROOT / "schemas" / "part3_argument_tree.schema.json"
 CANDIDATE_SCHEMA_PATH = PROJECT_ROOT / "schemas" / "part3_candidate_tree.schema.json"
@@ -222,6 +224,85 @@ def build_minimal_state(project_root, *, part2_completed=True, part3_gate=False)
     )
 
 
+def write_fake_argumentagent(project_root):
+    fake_agent = project_root / "fake_argumentagent_dense.py"
+    fake_agent.write_text(
+        (
+            "import json, sys\n"
+            "request = json.load(sys.stdin)\n"
+            "assert request['agent_name'] == 'argumentagent'\n"
+            "assert request['task'] == 'part3_candidate_argument_design'\n"
+            "assert request['skill'] == 'part3-argument-generate'\n"
+            "paths = [item['path'] for item in request['inputs']]\n"
+            "assert 'outputs/part3/argument_seed_map.json' in paths\n"
+            "assert 'research-wiki/index.json' in paths\n"
+            "assert 'skills/part3-argument-divergent-generate/SKILL.md' in paths\n"
+            "seed = next(item['content'] for item in request['inputs'] if item['path'] == 'outputs/part3/argument_seed_map.json')\n"
+            "item = seed['candidate_claims'][0]\n"
+            "research_question = seed.get('research_question') or item['text']\n"
+            "source_ids = item['source_ids']\n"
+            "wiki_page_ids = item['wiki_page_ids']\n"
+            "seed_item_ids = [item['item_id']]\n"
+            "innovation_flags = [\n"
+            "    'innovation_type:concept_reframe',\n"
+            "    'innovation_type:contradiction_finding',\n"
+            "    'innovation_type:method_transfer',\n"
+            "    'innovation_type:scale_shift',\n"
+            "    'innovation_type:case_boundary',\n"
+            "    'innovation_type:counter_position',\n"
+            "]\n"
+            "def node(node_id, node_type, claim, children=None, flags=None):\n"
+            "    return {\n"
+            "        'node_id': node_id,\n"
+            "        'claim': claim,\n"
+            "        'node_type': node_type,\n"
+            "        'support_source_ids': source_ids,\n"
+            "        'wiki_page_ids': wiki_page_ids,\n"
+            "        'seed_item_ids': seed_item_ids,\n"
+            "        'warrant': 'LLM 根据 seed map 发散生成，并保留来源追溯。',\n"
+            "        'evidence_summary': item['text'],\n"
+            "        'assumptions': ['Part 3 候选仍需人工选择'],\n"
+            "        'limitations': ['创新点不足证时需降级为假说'],\n"
+            "        'confidence': 0.72,\n"
+            "        'risk_flags': flags or [],\n"
+            "        'children': children or []\n"
+            "    }\n"
+            "def sub(base, index):\n"
+            "    suffix = f'{base}_{index}'\n"
+            "    return node(\n"
+            "        'sub_' + suffix,\n"
+            "        'sub_argument',\n"
+            "        'LLM 发散分论点 ' + suffix,\n"
+            "        [node('evidence_' + suffix, 'evidence', '证据支撑 ' + suffix)],\n"
+            "        [innovation_flags[(int(base) + index - 2) % len(innovation_flags)]]\n"
+            "    )\n"
+            "def candidate(strategy):\n"
+            "    main_children = [\n"
+            "        node('arg_001', 'main_argument', 'LLM 主论点一：' + strategy, [sub('001', 1), sub('001', 2)]),\n"
+            "        node('arg_002', 'main_argument', 'LLM 主论点二：' + strategy, [sub('002', 1), sub('002', 2)]),\n"
+            "        node('arg_003', 'main_argument', 'LLM 主论点三：' + strategy, [sub('003', 1), sub('003', 2)]),\n"
+            "        node('counter_001', 'counterargument', 'LLM 反方观点：' + strategy, [\n"
+            "            node('rebuttal_001', 'rebuttal', 'LLM 回应反方：' + strategy, flags=['innovation_type:counter_position'])\n"
+            "        ]),\n"
+            "    ]\n"
+            "    return {\n"
+            "        'candidate_id': 'candidate_' + strategy,\n"
+            "        'strategy': strategy,\n"
+            "        'root': node('thesis_' + strategy, 'thesis', 'LLM 设计的' + strategy + '候选论证路线：' + research_question, main_children)\n"
+            "    }\n"
+            "print(json.dumps({'artifacts': {'candidate_trees': [\n"
+            "    candidate('theory_first'),\n"
+            "    candidate('problem_solution'),\n"
+            "    candidate('case_application'),\n"
+            "]}}, ensure_ascii=False))\n"
+        ),
+        encoding="utf-8",
+    )
+    os.environ["RTM_ARGUMENTAGENT_COMMAND"] = f"{sys.executable} {fake_agent}"
+    os.environ["RTM_ARGUMENTAGENT_TIMEOUT"] = "5"
+    return fake_agent
+
+
 def configure_pipeline_for_tmp(pipeline, project_root):
     pipeline.PROJECT_ROOT = project_root
     pipeline.STATE_FILE = project_root / "runtime" / "state.json"
@@ -338,6 +419,7 @@ def prepare_part3_generation_inputs(tmp_path, *, part2_completed=True, part3_gat
             project_root=tmp_path,
             generated_at="2026-04-16T00:30:00+00:00",
         )
+        write_fake_argumentagent(tmp_path)
 
 
 def prepare_non_current_topic_part3_generation_inputs(tmp_path):
@@ -352,6 +434,7 @@ def prepare_non_current_topic_part3_generation_inputs(tmp_path):
         project_root=tmp_path,
         generated_at="2026-04-16T00:30:00+00:00",
     )
+    write_fake_argumentagent(tmp_path)
 
 
 def test_seed_map_generator_writes_traceable_argument_parts(tmp_path):
@@ -412,6 +495,7 @@ def test_seed_map_and_candidates_follow_non_current_topic_topic_without_stale_cu
         project_root=tmp_path,
         generated_at="2026-04-16T00:30:00+00:00",
     )
+    write_fake_argumentagent(tmp_path)
     candidates = generator.generate_candidates(
         project_root=tmp_path,
         generated_at="2026-04-16T01:00:00+00:00",
@@ -488,44 +572,58 @@ def test_candidate_generator_writes_three_candidates_without_canonical_tree(tmp_
             assert isinstance(node["risk_flags"], list)
 
 
-def test_candidate_generator_uses_argumentagent_when_command_is_configured(tmp_path, monkeypatch):
+def test_candidate_generator_expands_argument_density(tmp_path):
+    generator = load_module("part3_candidate_generator_density", CANDIDATE_GENERATOR_PATH)
+    prepare_part3_generation_inputs(tmp_path)
+
+    candidates = generator.generate_candidates(
+        project_root=tmp_path,
+        generated_at="2026-04-16T01:00:00+00:00",
+    )
+
+    viewpoint_types = {"thesis", "main_argument", "sub_argument", "counterargument", "rebuttal"}
+    for candidate in candidates:
+        nodes = collect_nodes(candidate["root"])
+        node_types = [node.get("node_type") for node in nodes]
+        viewpoint_count = sum(1 for node_type in node_types if node_type in viewpoint_types)
+        innovation_flags = {
+            flag
+            for node in nodes
+            for flag in node.get("risk_flags", [])
+            if isinstance(flag, str) and flag.startswith("innovation_type:")
+        }
+
+        assert 12 <= len(nodes) <= 18
+        assert 9 <= viewpoint_count <= 13
+        assert node_types.count("main_argument") == 3
+        assert node_types.count("sub_argument") >= 6
+        assert node_types.count("counterargument") >= 1
+        assert node_types.count("rebuttal") >= 1
+        assert len(innovation_flags) >= 4
+
+
+def test_argument_density_profiler_reports_candidate_ranges(tmp_path):
+    generator = load_module("part3_candidate_generator_for_density_profile", CANDIDATE_GENERATOR_PATH)
+    profiler = load_module("part3_argument_density_profiler", PROFILER_PATH)
+    prepare_part3_generation_inputs(tmp_path)
+    generator.generate_candidates(
+        project_root=tmp_path,
+        generated_at="2026-04-16T01:00:00+00:00",
+    )
+
+    profile = profiler.build_profile(tmp_path, generated_at="2026-04-16T01:30:00+00:00")
+
+    assert profile["summary"]["status"] == "pass"
+    assert profile["summary"]["candidate_count"] == 3
+    assert profile["summary"]["total_nodes_range"] == [18, 18]
+    assert profile["summary"]["viewpoint_nodes_range"] == [12, 12]
+    assert profile["summary"]["innovation_type_count"] >= 4
+    assert len(profile["reference_cases"]) == 2
+
+
+def test_candidate_generator_uses_argumentagent_when_command_is_configured(tmp_path):
     generator = load_module("part3_candidate_generator_llm", CANDIDATE_GENERATOR_PATH)
     prepare_part3_generation_inputs(tmp_path)
-    fake_agent = tmp_path / "fake_argumentagent.py"
-    fake_agent.write_text(
-        (
-            "import json, sys\n"
-            "request = json.load(sys.stdin)\n"
-            "assert request['agent_name'] == 'argumentagent'\n"
-            "assert request['task'] == 'part3_candidate_argument_design'\n"
-            "assert request['skill'] == 'part3-argument-generate'\n"
-            "paths = [item['path'] for item in request['inputs']]\n"
-            "assert 'outputs/part3/argument_seed_map.json' in paths\n"
-            "assert 'research-wiki/index.json' in paths\n"
-            "def candidate(strategy):\n"
-            "    return {\n"
-            "        'candidate_id': 'candidate_' + strategy,\n"
-            "        'strategy': strategy,\n"
-            "        'root': {\n"
-            "            'node_id': 'thesis_' + strategy,\n"
-            "            'claim': 'LLM 设计的' + strategy + '候选论证路线。',\n"
-            "            'node_type': 'thesis',\n"
-            "            'support_source_ids': ['cnki_001'],\n"
-            "            'wiki_page_ids': ['concept_current_topic_space'],\n"
-            "            'seed_item_ids': ['claim_001'],\n"
-            "            'children': []\n"
-            "        }\n"
-            "    }\n"
-            "print(json.dumps({'artifacts': {'candidate_trees': [\n"
-            "    candidate('theory_first'),\n"
-            "    candidate('problem_solution'),\n"
-            "    candidate('case_application'),\n"
-            "]}}, ensure_ascii=False))\n"
-        ),
-        encoding="utf-8",
-    )
-    monkeypatch.setenv("RTM_ARGUMENTAGENT_COMMAND", f"{sys.executable} {fake_agent}")
-    monkeypatch.setenv("RTM_ARGUMENTAGENT_TIMEOUT", "5")
 
     candidates = generator.generate_candidates(
         project_root=tmp_path,
@@ -552,6 +650,88 @@ def test_candidate_generator_uses_argumentagent_when_command_is_configured(tmp_p
             / "candidate_argument_trees"
             / f"{candidate['candidate_id']}.json"
         ).exists()
+
+
+def test_candidate_generator_requires_argumentagent_by_default(tmp_path, monkeypatch):
+    generator = load_module("part3_candidate_generator_requires_llm", CANDIDATE_GENERATOR_PATH)
+    prepare_part3_generation_inputs(tmp_path)
+    monkeypatch.delenv("RTM_ARGUMENTAGENT_COMMAND", raising=False)
+
+    try:
+        generator.generate_candidates(
+            project_root=tmp_path,
+            generated_at="2026-04-16T01:00:00+00:00",
+        )
+    except RuntimeError as exc:
+        assert "requires LLM argumentagent output" in str(exc)
+        assert "RTM_ARGUMENTAGENT_COMMAND" in str(exc)
+    else:
+        raise AssertionError("formal Part 3 candidate generation must require LLM argumentagent by default")
+
+
+def test_candidate_generator_allows_explicit_deterministic_fallback_escape_hatch(tmp_path, monkeypatch):
+    generator = load_module("part3_candidate_generator_explicit_deterministic_fallback", CANDIDATE_GENERATOR_PATH)
+    prepare_part3_generation_inputs(tmp_path)
+    monkeypatch.delenv("RTM_ARGUMENTAGENT_COMMAND", raising=False)
+
+    candidates = generator.generate_candidates(
+        project_root=tmp_path,
+        generated_at="2026-04-16T01:00:00+00:00",
+        allow_deterministic_fallback=True,
+    )
+
+    provenance = json.load(open(tmp_path / "outputs" / "part3" / "argumentagent_provenance.json", encoding="utf-8"))
+    assert len(candidates) == 3
+    assert provenance["mode"] == "deterministic_fallback"
+    assert "--allow-deterministic-fallback" in provenance["fallback_reason"]
+
+
+def test_candidate_generator_rejects_thin_argumentagent_candidates(tmp_path, monkeypatch):
+    generator = load_module("part3_candidate_generator_llm_density_required", CANDIDATE_GENERATOR_PATH)
+    prepare_part3_generation_inputs(tmp_path)
+    fake_agent = tmp_path / "fake_argumentagent_thin.py"
+    fake_agent.write_text(
+        (
+            "import json, sys\n"
+            "request = json.load(sys.stdin)\n"
+            "seed = next(item['content'] for item in request['inputs'] if item['path'] == 'outputs/part3/argument_seed_map.json')\n"
+            "item = seed['candidate_claims'][0]\n"
+            "def candidate(strategy):\n"
+            "    return {\n"
+            "        'candidate_id': 'candidate_' + strategy,\n"
+            "        'strategy': strategy,\n"
+            "        'root': {\n"
+            "            'node_id': 'thesis_' + strategy,\n"
+            "            'claim': '过薄的 LLM 候选论证路线。',\n"
+            "            'node_type': 'thesis',\n"
+            "            'support_source_ids': item['source_ids'],\n"
+            "            'wiki_page_ids': item['wiki_page_ids'],\n"
+            "            'seed_item_ids': [item['item_id']],\n"
+            "            'risk_flags': ['innovation_type:concept_reframe'],\n"
+            "            'children': []\n"
+            "        }\n"
+            "    }\n"
+            "print(json.dumps({'artifacts': {'candidate_trees': [\n"
+            "    candidate('theory_first'),\n"
+            "    candidate('problem_solution'),\n"
+            "    candidate('case_application'),\n"
+            "]}}, ensure_ascii=False))\n"
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("RTM_ARGUMENTAGENT_COMMAND", f"{sys.executable} {fake_agent}")
+    monkeypatch.setenv("RTM_ARGUMENTAGENT_TIMEOUT", "5")
+
+    try:
+        generator.generate_candidates(
+            project_root=tmp_path,
+            generated_at="2026-04-16T01:00:00+00:00",
+        )
+    except RuntimeError as exc:
+        assert "density too low" in str(exc)
+        assert "part3-argument-divergent-generate" in str(exc)
+    else:
+        raise AssertionError("argumentagent candidates must pass argument density validation")
 
 
 def test_candidate_generator_rejects_argumentagent_candidates_without_seed_item_ids(tmp_path, monkeypatch):
@@ -665,6 +845,7 @@ def test_candidate_generator_allows_explicit_wiki_fallback(tmp_path):
         project_root=tmp_path,
         generated_at="2026-04-16T01:00:00+00:00",
         allow_wiki_fallback=True,
+        allow_deterministic_fallback=True,
     )
 
     assert len(candidates) == 3

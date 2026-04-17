@@ -53,6 +53,13 @@ class Part3CliTests(unittest.TestCase):
             [sys.executable, str(GENERATOR_PATH), "--allow-wiki-fallback"]
         )
 
+    def test_part3_generate_passes_explicit_deterministic_fallback(self):
+        run = self.run_cli("part3-generate", "--allow-deterministic-fallback")
+
+        run.assert_called_once_with(
+            [sys.executable, str(GENERATOR_PATH), "--allow-deterministic-fallback"]
+        )
+
     def test_part3_refine_invokes_refiner_without_safety_flags_by_default(self):
         run = self.run_cli("part3-refine")
 

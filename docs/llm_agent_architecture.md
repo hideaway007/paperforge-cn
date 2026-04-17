@@ -19,7 +19,7 @@ This split matters because LLM agents are useful for academic judgment, but stat
 |---|---|---|---|
 | `researchagent` | Part 1-2 | Search strategy quality, relevance rationale, research gaps, source triage | Part 1 scripts, authenticity verifier, raw-library registrar, Part 2 gate |
 | `wikisynthesisagent` | Part 2 | Concept/topic/method synthesis, contradictions, evidence aggregation quality | Part 2 wiki generator, source mapping, `research-wiki/index.json` validation |
-| `argumentagent` | Part 3 | Candidate argument route design, comparison, stress test, refinement | Part 3 seed map, candidate file writes, human selection, canonical lock |
+| `argumentagent` | Part 3 | Candidate argument route design, comparison, stress test, refinement | Part 3 seed map, density/trace/schema validation, candidate file writes, human selection, canonical lock |
 | `outlineagent` | Part 4 | Argument-to-section structure, chapter responsibility, transition logic, alignment risks | Part 4 outline generator and validation |
 | `writeagent` / `writeragent` | Part 5-6 | Chinese academic drafting, conservative revision, author-style and academic-register constraints | Part 5/6 runtime scripts, review integrator, canonical manuscript writes unless a skill owns the artifact |
 | `claimauditor` | Part 5-6 | Overclaim, evidence sufficiency, missing warrant, case-verification risk | Part 5 integrator, Part 6 finalizer/report writers |
@@ -44,14 +44,15 @@ Other LLM roles use the generic `runtime/llm_agent_bridge.py`:
 
 - `researchagent`: `RTM_RESEARCHAGENT_COMMAND`; Part 1 writes a search-plan review sidecar and provenance, while search plan generation, CNKI priority, and source policy remain deterministic.
 - `wikisynthesisagent`: `RTM_WIKISYNTHESISAGENT_COMMAND`; Part 2 writes a wiki synthesis review sidecar and provenance, while `research-wiki/index.json`, source mapping, update log, and health checks remain deterministic.
-- `argumentagent`: `RTM_ARGUMENTAGENT_COMMAND`; Part 3 candidate generation may use LLM-designed candidate trees, while seed map generation and canonical lock remain deterministic.
+- `argumentagent`: `RTM_ARGUMENTAGENT_COMMAND`; Part 3 candidate arguments and candidate trees must be LLM-designed. Runtime scripts package the request, validate argument density/source trace/schema, write candidate files, and keep seed map generation plus canonical lock deterministic. If this command is not configured, formal Part 3 generation fails; `--allow-deterministic-fallback` is only an offline debug escape hatch.
+  - Local Codex adapter: `RTM_ARGUMENTAGENT_COMMAND="python3 runtime/agents/argumentagent_codex_cli.py"`.
 - `outlineagent`: `RTM_OUTLINEAGENT_COMMAND`; Part 4 writes an `outlineagent_review.json` sidecar and provenance, but does not let the LLM rewrite canonical outline artifacts.
 - `claimauditor`: `RTM_CLAIMAUDITOR_COMMAND`; Part 5/6 writes claim-audit sidecars and provenance, without modifying manuscripts or canonical reports.
 - `citationauditor`: `RTM_CITATIONAUDITOR_COMMAND`; Part 5/6 writes citation-audit sidecars and provenance, without modifying citation maps, manuscripts, or readiness decisions.
 
 Generic LLM commands receive JSON on stdin and must return a JSON object with at least one of `text`, `body`, `report`, `proposal`, `artifacts`, or `payload`.
 
-This design keeps offline smoke runs reproducible while allowing real LLM agents to participate when provider commands are configured.
+This design keeps offline smoke runs possible through explicit escape hatches while requiring real LLM agents for judgment-heavy formal steps such as Part 3 argument generation.
 
 ## 4. Global Boundaries
 
