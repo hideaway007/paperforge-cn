@@ -1,4 +1,4 @@
-# PaperForge CN
+# 论文毁灭者
 
 面向中文学术论文写作的 research-to-manuscript workflow。它不是一次性让 AI 写论文，而是把“选题 intake -> 文献资料库 -> research wiki -> argument tree -> paper outline -> 正文草稿 / review / revision -> 最终定稿包”拆成可校验、可恢复、可审计的阶段。
 

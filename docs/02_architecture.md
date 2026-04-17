@@ -1,7 +1,7 @@
 # 02 Architecture
 
 ## 1. Architecture Overview
-本系统采用三层结构：
+论文毁灭者采用三层结构：
 
 ### 1.1 Domain Workflow Layer
 负责论文业务本身，包括：

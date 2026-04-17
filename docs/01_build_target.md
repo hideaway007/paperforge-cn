@@ -1,7 +1,7 @@
 # 01 Build Target
 
 ## 1. Project Name
-Research-to-Manuscript Workflow System
+论文毁灭者
 
 ## 2. Project Goal
 本项目旨在构建一套面向**全中文学术写作环境**的 research-to-manuscript workflow 系统。系统应能从研究主题出发，完成：
@@ -27,7 +27,7 @@ Research-to-Manuscript Workflow System
 - 不同阶段产物之间缺乏清晰契约，难以复用和回溯
 - 中文写作规范、导师偏好和学校要求难以稳定注入流程
 
-本项目的目标，是把“搜资料 → 建知识层 → 产出论证 → 形成框架 → 写作修订”变成一条长期可迭代的主链，而不是一次性对话式输出。
+论文毁灭者的目标，是把“搜资料 → 建知识层 → 产出论证 → 形成框架 → 写作修订”变成一条长期可迭代的主链，而不是一次性对话式输出。
 
 ## 4. MVP Scope
 本期 MVP 必须覆盖以下能力：
