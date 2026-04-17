@@ -28,6 +28,14 @@
       "source": "distilled_external_writing_practice",
       "usage": "caption_expression_constraint_only",
       "may_be_used_as_research_evidence": false
+    },
+    {
+      "id": "scut_course_paper_format",
+      "path": "writing-policy/rules/scut_course_paper_format.md",
+      "title": "华南理工大学研究生课程论文正文格式规范",
+      "source": "user_provided_scut_course_paper_template_docx_2026_04_17",
+      "usage": "part6_docx_format_constraint_only",
+      "may_be_used_as_research_evidence": false
     }
   ],
   "style_guides": [
@@ -84,11 +92,13 @@
     "ai_style": true,
     "caption": true,
     "logic_redline": true,
-    "reviewer_perspective": true
+    "reviewer_perspective": true,
+    "format": true
   },
   "audit_notes": [
     "Registered files are writing constraints only; they are not research evidence.",
     "Do not infer or fabricate source claims from writing policy items.",
+    "SCUT course paper format rules are only for Part 6 docx export and must not enter research evidence.",
     "Tutor-specific rules can be added later after explicit user input."
   ]
 }

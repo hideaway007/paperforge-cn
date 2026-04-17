@@ -12,6 +12,8 @@ description: 学术研究 workflow Part 6 submission package 构建：生成 out
 - `outputs/part6/final_manuscript.md`
 - `outputs/part6/final_abstract.md`
 - `outputs/part6/final_keywords.json`
+- `outputs/part6/final_manuscript.docx`
+- `outputs/part6/docx_format_report.json`
 - `outputs/part6/claim_risk_report.json`
 - `outputs/part6/citation_consistency_report.json`
 - `outputs/part6/final_readiness_decision.json`（final 阶段需要）
@@ -30,7 +32,7 @@ description: 学术研究 workflow Part 6 submission package 构建：生成 out
 在 readiness decision 之前生成 draft checklist 和 draft manifest：
 
 - 标记 `package_stage: "draft"`。
-- 列出已有 final manuscript、abstract、keywords、audit reports。
+- 列出已有 final manuscript、abstract、keywords、docx export、audit reports。
 - 明确阻断项、缺失项与待 decision 项。
 
 ### Final package
@@ -48,4 +50,4 @@ description: 学术研究 workflow Part 6 submission package 构建：生成 out
 - 不得修改 claim/citation audit reports。
 - 不得写 `final_readiness_decision.json`。
 - 不得把 package manifest 当作提交授权。
-- 不得自动进入 Part 7 或 optional export。
+- 不得自动进入 Part 7。

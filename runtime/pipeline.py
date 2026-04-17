@@ -142,11 +142,15 @@ PART6_FINAL_MANUSCRIPT = "outputs/part6/final_manuscript.md"
 PART6_FINAL_ABSTRACT = "outputs/part6/final_abstract.md"
 PART6_FINAL_KEYWORDS = "outputs/part6/final_keywords.json"
 PART6_SUBMISSION_CHECKLIST = "outputs/part6/submission_checklist.md"
+PART6_FINAL_MANUSCRIPT_DOCX = "outputs/part6/final_manuscript.docx"
+PART6_DOCX_FORMAT_REPORT = "outputs/part6/docx_format_report.json"
 PART6_REQUIRED_PACKAGE_FILES = {
     PART6_FINAL_MANUSCRIPT,
     PART6_FINAL_ABSTRACT,
     PART6_FINAL_KEYWORDS,
     PART6_SUBMISSION_CHECKLIST,
+    PART6_FINAL_MANUSCRIPT_DOCX,
+    PART6_DOCX_FORMAT_REPORT,
     PART6_CLAIM_RISK_REPORT,
     PART6_CITATION_CONSISTENCY_REPORT,
     PART6_FINAL_READINESS_DECISION,
@@ -1850,6 +1854,40 @@ def _part6_citation_traceability_issues(citation_report: dict) -> list[str]:
     return issues
 
 
+def _part6_docx_format_issues() -> list[str]:
+    issues: list[str] = []
+    docx_path = PROJECT_ROOT / PART6_FINAL_MANUSCRIPT_DOCX
+    if not docx_path.exists():
+        return [f"缺少 artifact: {PART6_FINAL_MANUSCRIPT_DOCX}"]
+    if not docx_path.is_file() or docx_path.stat().st_size == 0:
+        issues.append(f"{PART6_FINAL_MANUSCRIPT_DOCX} 不是有效文件")
+
+    report, report_err = _load_json_artifact(PART6_DOCX_FORMAT_REPORT)
+    if report_err:
+        return issues + [report_err]
+    assert report is not None
+
+    if report.get("status") not in {"pass", "pass_with_warnings"}:
+        issues.append("docx_format_report.status 必须为 pass 或 pass_with_warnings")
+    if report.get("cover_excluded") is not True:
+        issues.append("docx_format_report.cover_excluded 必须为 true")
+    if not _ref_matches(report.get("source_manuscript_ref"), PART6_FINAL_MANUSCRIPT):
+        issues.append(f"docx_format_report.source_manuscript_ref 必须指向 {PART6_FINAL_MANUSCRIPT}")
+    if not _ref_matches(report.get("docx_ref"), PART6_FINAL_MANUSCRIPT_DOCX):
+        issues.append(f"docx_format_report.docx_ref 必须指向 {PART6_FINAL_MANUSCRIPT_DOCX}")
+    if not isinstance(report.get("paper_title"), str) or not report["paper_title"].strip():
+        issues.append("docx_format_report.paper_title 不能为空")
+    desktop_ref = report.get("desktop_docx_ref")
+    if not isinstance(desktop_ref, str) or not desktop_ref.strip():
+        issues.append("docx_format_report.desktop_docx_ref 不能为空")
+    else:
+        desktop_path = Path(desktop_ref).expanduser()
+        if not desktop_path.exists():
+            issues.append(f"docx_format_report.desktop_docx_ref 指向不存在的桌面文件: {desktop_ref}")
+
+    return issues
+
+
 def _part6_completion_package_issues() -> list[str]:
     issues: list[str] = []
 
@@ -1951,6 +1989,7 @@ def _part6_completion_package_issues() -> list[str]:
         )
     )
     issues.extend(_part6_citation_traceability_issues(citation_report))
+    issues.extend(_part6_docx_format_issues())
 
     return issues
 

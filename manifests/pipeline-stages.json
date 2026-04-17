@@ -280,7 +280,7 @@
     {
       "id": "part6",
       "name": "Finalize MVP",
-      "description": "Part 6 MVP：通过 runtime agent、skill 与 part6-finalize action 生成最终稿、最终审计、交付包 manifest 与人工最终决策记录；不声明 submission action",
+      "description": "Part 6 MVP：通过 runtime agent、skill 与 part6-finalize action 生成最终稿、最终审计、交付包 manifest、SCUT 格式 docx 与人工最终决策记录；不声明 submission action",
       "inputs": [
         "outputs/part5/manuscript_v2.md",
         "outputs/part5/part6_readiness_decision.json",
@@ -290,7 +290,8 @@
         "outputs/part5/citation_map.json",
         "raw-library/metadata.json",
         "research-wiki/index.json",
-        "writing-policy/source_index.json"
+        "writing-policy/source_index.json",
+        "writing-policy/rules/scut_course_paper_format.md"
       ],
       "canonical_artifacts": [
         "outputs/part6/final_manuscript.md",
@@ -304,6 +305,8 @@
         "outputs/part6/final_abstract.md",
         "outputs/part6/final_keywords.json",
         "outputs/part6/submission_checklist.md",
+        "outputs/part6/final_manuscript.docx",
+        "outputs/part6/docx_format_report.json",
         "outputs/part6/claim_risk_report.json",
         "outputs/part6/citation_consistency_report.json",
         "outputs/part6/submission_package_manifest.json",
@@ -312,7 +315,8 @@
       "part6_scope": [
         "finalize_gate_foundation",
         "final_package_contract",
-        "human_final_decision"
+        "human_final_decision",
+        "docx_format_export_contract"
       ],
       "implementation_boundary": {
         "runtime_agent_declared": true,
@@ -320,11 +324,22 @@
         "finalize_action_declared": true,
         "submission_action_declared": false
       },
+      "format_export": {
+        "status": "implemented",
+        "architecture_doc": "docs/part6_docx_format_export_architecture.md",
+        "format_policy_ref": "writing-policy/rules/scut_course_paper_format.md",
+        "project_docx_ref": "outputs/part6/final_manuscript.docx",
+        "format_report_ref": "outputs/part6/docx_format_report.json",
+        "desktop_copy_rule": "~/Desktop/{paper_title}.docx",
+        "cover_scope": "excluded",
+        "research_evidence_allowed": false
+      },
       "automation_flow": [
         "part6_finalize",
         "part6_audit_claim",
         "part6_audit_citation",
         "part6_package_draft",
+        "part6_export_docx",
         "part6_decide",
         "part6_package_final"
       ],
@@ -356,6 +371,7 @@
           "Part 5 handoff fingerprint has not drifted",
           "citation and evidence allowlist pass",
           "submission package manifest and final readiness verdict are consistent",
+          "SCUT docx export files are listed in package manifest and desktop copy uses paper title",
           "final decision human confirmation recorded",
           "no submission action is performed or authorized"
         ]

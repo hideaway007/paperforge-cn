@@ -31,6 +31,7 @@ from runtime.llm_writer_bridge import (  # noqa: E402
 )
 from runtime.llm_agent_bridge import request_llm_agent, write_llm_agent_provenance  # noqa: E402
 from runtime.writing_contract import public_text_has_internal_markers, remove_internal_lines  # noqa: E402
+from runtime.agents.part6_docx_exporter import export_docx  # noqa: E402
 
 
 REQUIRED_PACKAGE_FILES = [
@@ -38,6 +39,8 @@ REQUIRED_PACKAGE_FILES = [
     "outputs/part6/final_abstract.md",
     "outputs/part6/final_keywords.json",
     "outputs/part6/submission_checklist.md",
+    "outputs/part6/final_manuscript.docx",
+    "outputs/part6/docx_format_report.json",
     "outputs/part6/claim_risk_report.json",
     "outputs/part6/citation_consistency_report.json",
     "outputs/part6/final_readiness_decision.json",
@@ -65,6 +68,11 @@ EVIDENCE_REFS = [
 PROCESS_REFS = [
     "outputs/part5/revision_log.json",
     "outputs/part5/part6_readiness_decision.json",
+]
+
+POLICY_REFS = [
+    "writing-policy/source_index.json",
+    "writing-policy/rules/scut_course_paper_format.md",
 ]
 
 WRITEAGENT_STYLE_INPUTS = [
@@ -1017,7 +1025,7 @@ def write_manifest(
         "required_files": list(REQUIRED_PACKAGE_FILES),
         "missing_files": missing_files,
         "audit_refs": list(AUDIT_REFS),
-        "policy_refs": [],
+        "policy_refs": list(POLICY_REFS),
         "evidence_refs": [rel_path for rel_path in EVIDENCE_REFS if (project_root / rel_path).exists()],
         "process_refs": [rel_path for rel_path in PROCESS_REFS if (project_root / rel_path).exists()],
         "human_decision_required": True,
@@ -1134,6 +1142,8 @@ def run_step(project_root: Path, step: str) -> None:
         audit_citations(project_root)
     elif step == "package-draft":
         package_draft(project_root)
+    elif step == "export-docx":
+        export_docx(project_root)
     elif step == "decide":
         decide_readiness(project_root)
     elif step == "package-final":
@@ -1144,6 +1154,7 @@ def run_step(project_root: Path, step: str) -> None:
         audit_claims(project_root, checked=True)
         audit_citations(project_root, checked=True)
         package_draft(project_root, checked=True)
+        export_docx(project_root, checked=True)
         decide_readiness(project_root, checked=True)
         package_final(project_root, checked=True)
     else:
@@ -1162,15 +1173,22 @@ def print_summary(project_root: Path, step: str) -> None:
         "outputs/part6/claim_risk_report.json",
         "outputs/part6/citation_consistency_report.json",
         "outputs/part6/submission_checklist.md",
+        "outputs/part6/final_manuscript.docx",
+        "outputs/part6/docx_format_report.json",
         "outputs/part6/submission_package_manifest.json",
         "outputs/part6/final_readiness_decision.json",
     ]:
         if (project_root / rel_path).exists():
             print(f"  ✓ {rel_path}")
-    if os.environ.get("PART6_DESKTOP_DIR"):
-        desktop_manuscript = part6_desktop_dir() / PART6_DESKTOP_MANUSCRIPT_NAME
-        if desktop_manuscript.exists():
-            print(f"  ✓ {desktop_manuscript}")
+    format_report_path = project_root / "outputs/part6/docx_format_report.json"
+    if format_report_path.exists():
+        try:
+            report = json.loads(format_report_path.read_text(encoding="utf-8"))
+            desktop_docx = report.get("desktop_docx_ref")
+            if isinstance(desktop_docx, str) and Path(desktop_docx).expanduser().exists():
+                print(f"  ✓ {desktop_docx}")
+        except json.JSONDecodeError:
+            pass
     print("  Human gates are not auto-confirmed by this script.")
     print("  Submission is not executed.")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -1186,6 +1204,7 @@ def parse_args() -> argparse.Namespace:
             "audit-claim",
             "audit-citation",
             "package-draft",
+            "export-docx",
             "decide",
             "package-final",
             "all",

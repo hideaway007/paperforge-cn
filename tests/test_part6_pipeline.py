@@ -334,6 +334,28 @@ class Part6PipelineTests(unittest.TestCase):
             "outputs/part6/final_keywords.json",
             {"keywords": ["地域建筑符号", "空间结构"]},
         )
+        desktop_docx = self.project_root / "Desktop" / "地域建筑符号空间结构研究.docx"
+        desktop_docx.parent.mkdir(parents=True, exist_ok=True)
+        desktop_docx.write_text("docx placeholder", encoding="utf-8")
+        self.write_text("outputs/part6/final_manuscript.docx", "docx placeholder")
+        self.write_json(
+            "outputs/part6/docx_format_report.json",
+            {
+                "schema_version": "1.0.0",
+                "generated_at": "2026-04-16T01:09:00+00:00",
+                "status": "pass",
+                "source_manuscript_ref": "outputs/part6/final_manuscript.md",
+                "docx_ref": "outputs/part6/final_manuscript.docx",
+                "desktop_docx_ref": str(desktop_docx),
+                "format_policy_ref": "writing-policy/rules/scut_course_paper_format.md",
+                "cover_excluded": True,
+                "paper_title": "地域建筑符号空间结构研究",
+                "style_checks": [],
+                "content_checks": [],
+                "warnings": [],
+                "errors": [],
+            },
+        )
         self.write_text(
             "outputs/part6/submission_checklist.md",
             (
@@ -430,6 +452,8 @@ class Part6PipelineTests(unittest.TestCase):
                     "outputs/part6/final_abstract.md",
                     "outputs/part6/final_keywords.json",
                     "outputs/part6/submission_checklist.md",
+                    "outputs/part6/final_manuscript.docx",
+                    "outputs/part6/docx_format_report.json",
                     "outputs/part6/claim_risk_report.json",
                     "outputs/part6/citation_consistency_report.json",
                     "outputs/part6/final_readiness_decision.json",
@@ -439,6 +463,8 @@ class Part6PipelineTests(unittest.TestCase):
                     "outputs/part6/final_abstract.md",
                     "outputs/part6/final_keywords.json",
                     "outputs/part6/submission_checklist.md",
+                    "outputs/part6/final_manuscript.docx",
+                    "outputs/part6/docx_format_report.json",
                     "outputs/part6/claim_risk_report.json",
                     "outputs/part6/citation_consistency_report.json",
                     "outputs/part6/final_readiness_decision.json",
@@ -448,7 +474,7 @@ class Part6PipelineTests(unittest.TestCase):
                     "outputs/part6/claim_risk_report.json",
                     "outputs/part6/citation_consistency_report.json",
                 ],
-                "policy_refs": [],
+                "policy_refs": ["writing-policy/rules/scut_course_paper_format.md"],
                 "evidence_refs": [],
                 "human_decision_required": True,
             },

@@ -1,6 +1,6 @@
 # Part 6 MVP Architecture
 
-> Current status: Part 6 MVP is implemented as an explicit finalization surface. It provides 7 MVP skills, the `part6-finalize` CLI command, one deterministic finalizer script, and one dedicated writer script. It must not auto-confirm Part 6 human gates, must not perform submission, and must not advance Part 7.
+> Current status: Part 6 MVP is implemented as an explicit finalization surface. It provides 8 MVP skills, the `part6-finalize` / `part6-export-docx` CLI commands, one deterministic finalizer script, one deterministic docx exporter script, and one dedicated writer script. It must not auto-confirm Part 6 human gates, must not perform submission, and must not advance Part 7.
 
 ## 1. MVP Decision
 
@@ -416,7 +416,7 @@ Part 6 的 evidence allowlist 只能来自：
 
 ## 12. Skill Surface
 
-Part 6 MVP 暴露 7 个 workflow skills：
+Part 6 MVP 暴露 8 个 workflow skills：
 
 - `part6-finalize-package`
 - `part6-write-manuscript-body`
@@ -425,6 +425,7 @@ Part 6 MVP 暴露 7 个 workflow skills：
 - `part6-audit-citation-consistency`
 - `part6-build-submission-package`
 - `part6-decide-readiness`
+- `part6-export-docx`
 
 manifest automation flow 使用 snake_case step 名：
 
@@ -432,6 +433,7 @@ manifest automation flow 使用 snake_case step 名：
 - `part6_audit_claim`
 - `part6_audit_citation`
 - `part6_package_draft`
+- `part6_export_docx`
 - `part6_decide`
 - `part6_package_final`
 
@@ -441,6 +443,7 @@ manifest automation flow 使用 snake_case step 名：
 - “生成最终稿”
 - “做最终审计”
 - “生成 submission package”
+- “生成 docx”
 - “part6-finalize-package”
 
 职责：
@@ -458,7 +461,7 @@ manifest automation flow 使用 snake_case step 名：
 - 不自动确认 `part6_finalization_authorized`
 - 不自动确认 `part6_final_decision_confirmed`
 - 不自动提交
-- 不把 `.docx` / `.pdf` 当作 MVP 必需产物
+- 不把 `.pdf` 当作 MVP 必需产物
 - 不把 writing policy 当 research evidence
 
 ---
@@ -484,6 +487,7 @@ manifest automation flow 使用 snake_case step 名：
 - 实现 `audit-claim`
 - 实现 `audit-citation`
 - 实现 `package-draft`
+- 实现 `export-docx`
 - 实现 `decide`
 - 实现 `package-final`
 
@@ -494,6 +498,7 @@ manifest automation flow 使用 snake_case step 名：
   - `part6-precheck`
   - `part6-authorize`
   - `part6-finalize`
+  - `part6-export-docx`
   - `part6-check`
   - `part6-confirm-final`
 - Skills:
@@ -503,11 +508,13 @@ manifest automation flow 使用 snake_case step 名：
   - `part6-audit-citation-consistency`
   - `part6-build-submission-package`
   - `part6-decide-readiness`
+  - `part6-export-docx`
 - Manifest automation flow:
   - `part6_finalize`
   - `part6_audit_claim`
   - `part6_audit_citation`
   - `part6_package_draft`
+  - `part6_export_docx`
   - `part6_decide`
   - `part6_package_final`
 
@@ -559,7 +566,8 @@ MVP 必须先覆盖以下测试。
 - `part6-precheck` 只读，不写 `outputs/part6/*`。
 - `part6-authorize` 只记录 Part 6 authorization 和 Part 5 handoff fingerprints，不生成 final artifacts。
 - `part6-finalize` 在缺少 `part6_finalization_authorized` 时失败。
-- `part6-finalize` 的 `all` 顺序必须是 `precheck -> finalize -> audit-claim -> audit-citation -> package-draft -> decide -> package-final`。
+- `part6-finalize` 的 `all` 顺序必须是 `precheck -> finalize -> audit-claim -> audit-citation -> package-draft -> export-docx -> decide -> package-final`。
+- `part6-export-docx` 必须生成 `outputs/part6/final_manuscript.docx`、`outputs/part6/docx_format_report.json` 与 `~/Desktop/{论文题目}.docx`。
 - `submission_package_manifest.json` 必须最后生成或刷新，并包含 `final_readiness_decision.json`。
 - `part6-confirm-final` 只记录 human decision，不执行 submission。
 
@@ -571,7 +579,10 @@ Part 6 MVP 完成必须同时满足：
 
 - `outputs/part6/final_manuscript.md` 已生成且非空。
 - `outputs/part6/final_manuscript.md` 通过摘要、关键词、正文、结论 completeness check。
-- `submission_package_manifest.json.required_files` 包含 `final_abstract.md`、`final_keywords.json` 与 `submission_checklist.md`。
+- `outputs/part6/final_manuscript.docx` 已生成。
+- `outputs/part6/docx_format_report.json.status` 为 `pass` 或 `pass_with_warnings`。
+- `~/Desktop/{论文题目}.docx` 已生成，文件名来自论文题目。
+- `submission_package_manifest.json.required_files` 包含 `final_abstract.md`、`final_keywords.json`、`submission_checklist.md`、`final_manuscript.docx` 与 `docx_format_report.json`。
 - `outputs/part6/claim_risk_report.json` schema valid。
 - `outputs/part6/citation_consistency_report.json` schema valid。
 - `outputs/part6/submission_package_manifest.json` schema valid。
@@ -579,4 +590,4 @@ Part 6 MVP 完成必须同时满足：
 - final verdict 符合 claim/citation/manifest 状态。
 - process-memory 中有 Part 6 gate 校验与 human decision 记录。
 - 系统没有执行任何 submission action。
-- `.docx` / `.pdf` 不是 completion gate 的必要条件。
+- `.pdf` 不是 completion gate 的必要条件。

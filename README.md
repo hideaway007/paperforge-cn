@@ -48,7 +48,7 @@ MIT
 |---|---|---:|---|
 | Part 1 | 文献检索、下载、本地资料库、真实性校验 | 需要确认 intake | `raw-library/metadata.json`, `outputs/part1/authenticity_report.json` |
 | Part 2 | 构建 research wiki 与 writing policy | 不需要 | `research-wiki/index.json` |
-| Part 3 | 生成 3 份 argument tree，比较并锁定 canonical tree | 需要选择候选 | `outputs/part3/argument_tree.json` |
+| Part 3 | 由 LLM `argumentagent` 生成 3 份候选 argument tree，比较并锁定 canonical tree | 需要选择候选 | `outputs/part3/argument_tree.json` |
 | Part 4 | 生成论文大纲三件套 | 不需要 | `outputs/part4/paper_outline.json`, `outline_rationale.json`, `reference_alignment_report.json` |
 | Part 5 | 写作输入包、正文初稿、结构化 review 与修订稿 | 不需要 | `outputs/part5/manuscript_v2.md`, `review_report.md`, `revision_log.json` |
 | Part 6 | 最终定稿、claim / citation audit、submission package manifest 与最终 readiness 决策 | 需要最终授权和确认 | `outputs/part6/final_manuscript.md`, `claim_risk_report.json`, `citation_consistency_report.json`, `submission_package_manifest.json`, `final_readiness_decision.json` |
@@ -90,12 +90,14 @@ Part 6 的最终稿和交付包保存在对应阶段目录：
 - `outputs/part6/final_abstract.md`
 - `outputs/part6/final_keywords.json`
 - `outputs/part6/submission_checklist.md`
+- `outputs/part6/final_manuscript.docx`
+- `outputs/part6/docx_format_report.json`
 - `outputs/part6/claim_risk_report.json`
 - `outputs/part6/citation_consistency_report.json`
 - `outputs/part6/submission_package_manifest.json`
 - `outputs/part6/final_readiness_decision.json`
 
-Part 6 默认只写入 `outputs/part6/`。如需额外导出给用户阅读，可显式设置 `PART6_DESKTOP_DIR`，系统会在该目录写入 `part6_final_manuscript.md`；外部导出文件不是 canonical package。
+Part 6 还会额外生成 `~/Desktop/{论文题目}.docx` 给用户阅读和提交前检查；桌面文件不是 canonical package。
 
 ## 目录说明
 
@@ -151,6 +153,7 @@ python3 cli.py advance part2
 Part 3：
 
 ```bash
+export RTM_ARGUMENTAGENT_COMMAND="python3 runtime/agents/argumentagent_codex_cli.py"
 python3 cli.py part3-seed-map
 python3 cli.py part3-generate
 python3 cli.py part3-compare
@@ -188,6 +191,7 @@ Part 6：
 python3 cli.py part6-precheck
 python3 cli.py part6-authorize --notes "授权进入 Part 6 finalization"
 python3 cli.py part6-finalize --step all
+python3 cli.py part6-export-docx
 python3 cli.py part6-check
 python3 cli.py part6-confirm-final --notes "最终状态：内部评阅"
 python3 cli.py validate part6
@@ -217,18 +221,20 @@ Part 6 当前在 active `STAGE_ORDER` 中，但它不是自动投稿系统：
 - `outputs/part5/part6_readiness_decision.json` 只表达 Part 5 handoff readiness，不等于授权。
 - `part6-authorize` 会记录当前 Part 5 handoff fingerprints；授权后如果 Part 5 handoff artifacts 变化，必须重新授权。
 - `part6-finalize --step all` 生成最终稿、审计报告、manifest 与 final readiness decision。
+- `part6-export-docx` 可单独重跑 SCUT docx export；最终桌面副本命名为论文题目：`~/Desktop/{论文题目}.docx`。
 - `part6-confirm-final` 只记录人工最终决策，不执行 submission。
 - `formal_submission_ready` 也只是 readiness verdict，不是自动提交授权。
 
 ## 当前文档入口
 
-- [docs/01_build_target.md](docs/01_build_target.md)：历史基线目标文档，不作为当前唯一 workflow truth source。
-- [docs/02_architecture.md](docs/02_architecture.md)：历史基线架构文档，Part 6 等当前状态以 manifest / runtime / Part6 MVP 文档为准。
+- [docs/01_build_target.md](docs/01_build_target.md)：当前开源版目标合同，已吸收 Part 3 / Part 5 / Part 6 / DOCX 导出架构结论。
+- [docs/02_architecture.md](docs/02_architecture.md)：当前开源版架构合同，已吸收 Part 3 / Part 5 / Part 6 / DOCX 导出架构结论。
+- [docs/part3_argumentagent_architecture.md](docs/part3_argumentagent_architecture.md)：Part 3 LLM `argumentagent` 生成候选论点、密度校验与人工选择边界。
 - [docs/part5_architecture.md](docs/part5_architecture.md)：Part 5 写作、review、revision 与本地产物合同。
 - [docs/part6_mvp_architecture.md](docs/part6_mvp_architecture.md)：当前 Part 6 MVP finalization surface、gate、artifact 与 CLI 合同。
+- [docs/part6_docx_format_export_architecture.md](docs/part6_docx_format_export_architecture.md)：Part 6 SCUT docx 格式导出合同，封面不纳入，桌面副本使用论文题目命名。
 - [docs/part6_architecture.md](docs/part6_architecture.md)：Part 6 总体架构说明，当前实现以 MVP 文档和 runtime gate 为准。
 - [docs/llm_agent_architecture.md](docs/llm_agent_architecture.md)：LLM agent 角色与 deterministic runtime script 的职责分层。
-- [docs/part3_argumentagent_architecture.md](docs/part3_argumentagent_architecture.md)：Part 3 argumentagent 边界。
 
 ## 核心原则
 
@@ -237,5 +243,6 @@ Part 6 当前在 active `STAGE_ORDER` 中，但它不是自动投稿系统：
 - 所有进入主链的来源必须完成真实性校验和来源标注。
 - 不得用非 canonical artifacts 推进阶段。
 - research evidence 与 writing policy 必须物理分离。
+- Part 3 候选论点与候选 argument tree 必须由 LLM `argumentagent` 生成；runtime scripts 只负责 seed map、校验、落盘和 canonical lock。
 - Part 5 可以自动写作、review 和 revision，但不能虚构证据、吞掉 blocker 或把 readiness decision 当作 Part 6 授权。
 - Part 6 可以生成最终交付包，但必须保留人工 finalization authorization 与 final decision，不得自动投稿。

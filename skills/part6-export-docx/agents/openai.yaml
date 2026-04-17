@@ -1,0 +1,6 @@
+interface:
+  display_name: "Part 6 DOCX Export"
+  short_description: "Generate the final SCUT-formatted Word document."
+  default_prompt: "Use $part6-export-docx to generate the final Word document and desktop copy."
+policy:
+  allow_implicit_invocation: true

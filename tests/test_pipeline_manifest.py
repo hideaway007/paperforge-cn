@@ -43,6 +43,7 @@ class PipelineManifestContractTests(unittest.TestCase):
                 "part6_audit_claim",
                 "part6_audit_citation",
                 "part6_package_draft",
+                "part6_export_docx",
                 "part6_decide",
                 "part6_package_final",
             ],

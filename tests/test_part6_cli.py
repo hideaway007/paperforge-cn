@@ -102,6 +102,26 @@ class Part6CliTests(unittest.TestCase):
             "part6_mvp_finalizer.py", "--step", "all", "--project-root", "/tmp/x"
         )
 
+    def test_part6_finalize_export_docx_step_calls_finalizer(self):
+        with patch.object(self.cli, "_run_agent_script") as run_agent_script:
+            with patch.object(sys, "argv", ["cli.py", "part6-finalize", "--step", "export-docx"]):
+                self.cli.main()
+
+        run_agent_script.assert_called_once_with("part6_mvp_finalizer.py", "--step", "export-docx")
+
+    def test_part6_export_docx_command_calls_export_step(self):
+        with patch.object(self.cli, "_run_agent_script") as run_agent_script:
+            with patch.object(
+                sys,
+                "argv",
+                ["cli.py", "part6-export-docx", "--project-root", "/tmp/x"],
+            ):
+                self.cli.main()
+
+        run_agent_script.assert_called_once_with(
+            "part6_mvp_finalizer.py", "--step", "export-docx", "--project-root", "/tmp/x"
+        )
+
     def test_part6_finalize_defaults_to_all_step(self):
         with patch.object(self.cli, "_run_agent_script") as run_agent_script:
             with patch.object(sys, "argv", ["cli.py", "part6-finalize"]):
@@ -114,6 +134,7 @@ class Part6CliTests(unittest.TestCase):
             "part6-precheck",
             "part6-authorize",
             "part6-finalize",
+            "part6-export-docx",
             "part6-check",
             "part6-confirm-final",
         ]:
@@ -130,6 +151,7 @@ class Part6CliTests(unittest.TestCase):
             "part6-precheck",
             "part6-authorize",
             "part6-finalize",
+            "part6-export-docx",
             "part6-check",
             "part6-confirm-final",
         ]:

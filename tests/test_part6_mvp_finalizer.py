@@ -7,6 +7,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from docx import Document
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PIPELINE_PATH = PROJECT_ROOT / "runtime" / "pipeline.py"
@@ -398,6 +400,13 @@ class Part6MvpFinalizerTests(unittest.TestCase):
     def test_all_generates_required_package_files_without_confirming_final_decision(self):
         self.write_state()
         self.write_valid_part5_handoff()
+        self.write_json(
+            "outputs/part1/intake.json",
+            {
+                "research_topic": "地域建筑符号在设计教育中的转化应用",
+                "student_name": "李同学",
+            },
+        )
         readiness = self.read_json("outputs/part5/part6_readiness_decision.json")
         readiness["residual_risks"] = [
             "案例分析需要借助Part 2 Evidence... 需要图纸/动线/视线材料支撑，缺失时只能保守表述。",
@@ -430,9 +439,31 @@ class Part6MvpFinalizerTests(unittest.TestCase):
         self.finalizer.run_step(self.project_root, "all")
 
         manifest = self.read_json("outputs/part6/submission_package_manifest.json")
-        self.assertEqual(7, len(manifest["required_files"]))
+        self.assertEqual(9, len(manifest["required_files"]))
         for rel_path in manifest["required_files"]:
             self.assertTrue((self.project_root / rel_path).exists(), rel_path)
+        self.assertIn("outputs/part6/final_manuscript.docx", manifest["required_files"])
+        self.assertIn("outputs/part6/docx_format_report.json", manifest["required_files"])
+        self.assertIn(
+            "writing-policy/rules/scut_course_paper_format.md",
+            manifest["policy_refs"],
+        )
+        format_report = self.read_json("outputs/part6/docx_format_report.json")
+        self.assertIn(format_report["status"], {"pass", "pass_with_warnings"})
+        self.assertTrue(format_report["cover_excluded"])
+        self.assertEqual("地域建筑符号在设计教育中的转化应用", format_report["paper_title"])
+        self.assertEqual(
+            str(self.desktop_dir / "地域建筑符号在设计教育中的转化应用.docx"),
+            format_report["desktop_docx_ref"],
+        )
+        self.assertTrue((self.project_root / "outputs/part6/final_manuscript.docx").exists())
+        self.assertTrue((self.desktop_dir / "地域建筑符号在设计教育中的转化应用.docx").exists())
+        doc = Document(self.project_root / "outputs/part6/final_manuscript.docx")
+        doc_text = "\n".join(paragraph.text for paragraph in doc.paragraphs)
+        self.assertIn("地域建筑符号在设计教育中的转化应用", doc_text)
+        self.assertIn("李同学", doc_text)
+        self.assertNotIn("教师评语", doc_text)
+        self.assertNotIn("正式上交课程论文时，请删除蓝色字体内容", doc_text)
         state = self.read_json("runtime/state.json")
         self.assertNotIn(
             "part6_final_decision_confirmed",
@@ -1019,9 +1050,21 @@ class Part6MvpFinalizerTests(unittest.TestCase):
     def test_package_decide_final_manifest_closes_and_passes_after_final_confirm(self):
         self.write_state()
         self.write_valid_part5_handoff(readiness_verdict="ready_for_part6")
+        self.write_json(
+            "outputs/part1/intake.json",
+            {"research_topic": "地域建筑符号空间结构研究"},
+        )
         self.authorize_part6()
         self.allow_deterministic_writer_fallback()
-        for step in ["finalize", "audit-claim", "audit-citation", "package-draft", "decide", "package-final"]:
+        for step in [
+            "finalize",
+            "audit-claim",
+            "audit-citation",
+            "package-draft",
+            "export-docx",
+            "decide",
+            "package-final",
+        ]:
             self.finalizer.run_step(self.project_root, step)
 
         decision = self.read_json("outputs/part6/final_readiness_decision.json")

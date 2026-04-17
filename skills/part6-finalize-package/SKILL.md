@@ -1,6 +1,6 @@
 ---
 name: part6-finalize-package
-description: 学术研究 workflow Part 6 用户级 orchestration：按 precheck -> finalize -> audit-claim -> audit-citation -> package-draft -> decide -> package-final -> validate 执行最终稿与提交包流程。当用户说「开始 Part 6」「最终定稿」「生成提交包」「part6-finalize-package」且未指定子步骤时触发。该 skill 不直接拥有子产物，不自动确认 part6_finalization_authorized 或 part6_final_decision_confirmed。
+description: 学术研究 workflow Part 6 用户级 orchestration：按 precheck -> finalize -> audit-claim -> audit-citation -> package-draft -> export-docx -> decide -> package-final -> validate 执行最终稿、docx 与提交包流程。当用户说「开始 Part 6」「最终定稿」「生成提交包」「生成 docx」「part6-finalize-package」且未指定子步骤时触发。该 skill 不直接拥有子产物，不自动确认 part6_finalization_authorized 或 part6_final_decision_confirmed。
 ---
 
 # Part 6 Finalize Package
@@ -21,9 +21,10 @@ description: 学术研究 workflow Part 6 用户级 orchestration：按 precheck
 3. `audit-claim`：调用 `$part6-audit-claim-risk`。
 4. `audit-citation`：调用 `$part6-audit-citation-consistency`。
 5. `package-draft`：调用 `$part6-build-submission-package` 生成 draft package artifacts。
-6. `decide`：调用 `$part6-decide-readiness`。
-7. `package-final`：仅当 decision verdict 允许 final package 时，调用 `$part6-build-submission-package` 刷新 final manifest。
-8. `validate`：校验 Part 6 canonical artifacts 齐备且所有权未越界。
+6. `export-docx`：调用 `$part6-export-docx` 生成项目内 docx、format report 和桌面 `{论文题目}.docx`。
+7. `decide`：调用 `$part6-decide-readiness`。
+8. `package-final`：仅当 decision verdict 允许 final package 时，调用 `$part6-build-submission-package` 刷新 final manifest。
+9. `validate`：校验 Part 6 canonical artifacts 齐备且所有权未越界。
 
 ## Artifact Ownership
 
@@ -32,6 +33,8 @@ description: 学术研究 workflow Part 6 用户级 orchestration：按 precheck
 - `outputs/part6/final_manuscript.md`
 - `outputs/part6/final_abstract.md`
 - `outputs/part6/final_keywords.json`
+- `outputs/part6/final_manuscript.docx`
+- `outputs/part6/docx_format_report.json`
 - `outputs/part6/claim_risk_report.json`
 - `outputs/part6/citation_consistency_report.json`
 - `outputs/part6/submission_checklist.md`

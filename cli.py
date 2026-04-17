@@ -39,6 +39,7 @@ Commands:
   part6-precheck              只读检查 Part 6 entry/package gate
   part6-authorize             记录 Part 6 finalization 人工授权
   part6-finalize              运行 Part 6 finalizer step，不自动确认人工 gate
+  part6-export-docx           生成 SCUT 格式 docx，并复制到桌面
   part6-check                 检查 Part 6 package gate
   part6-confirm-final         记录 Part 6 最终人工决策
 
@@ -63,6 +64,7 @@ Usage:
   python cli.py part6-precheck
   python cli.py part6-authorize --notes "授权进入 Part 6 finalization"
   python cli.py part6-finalize --step all
+  python cli.py part6-export-docx
   python cli.py part6-check
   python cli.py part6-confirm-final --notes "最终状态：内部评阅"
 """
@@ -582,6 +584,13 @@ def cmd_part6_finalize(args):
     _run_agent_script("part6_mvp_finalizer.py", *script_args)
 
 
+def cmd_part6_export_docx(args):
+    script_args = ["--step", "export-docx"]
+    if args.project_root:
+        script_args.extend(["--project-root", args.project_root])
+    _run_agent_script("part6_mvp_finalizer.py", *script_args)
+
+
 def cmd_part6_check(args):
     print("Checking Part 6 package gate ...")
     passed, issues = validate_gate("part6")
@@ -902,6 +911,7 @@ def main():
             "audit-claim",
             "audit-citation",
             "package-draft",
+            "export-docx",
             "decide",
             "package-final",
             "all",
@@ -911,6 +921,13 @@ def main():
     )
     p_part6_finalize.add_argument("--project-root", metavar="PATH",
                                   help="透传给 Part 6 finalizer 的项目根目录")
+
+    p_part6_export_docx = sub.add_parser(
+        "part6-export-docx",
+        help="生成 SCUT 格式 docx，并复制到桌面 {论文题目}.docx",
+    )
+    p_part6_export_docx.add_argument("--project-root", metavar="PATH",
+                                     help="透传给 Part 6 docx exporter 的项目根目录")
 
     sub.add_parser("part6-check", help="检查 Part 6 package gate")
 
@@ -957,6 +974,7 @@ def main():
         "part6-precheck": cmd_part6_precheck,
         "part6-authorize": cmd_part6_authorize,
         "part6-finalize": cmd_part6_finalize,
+        "part6-export-docx": cmd_part6_export_docx,
         "part6-check": cmd_part6_check,
         "part6-confirm-final": cmd_part6_confirm_final,
     }[args.command](args)

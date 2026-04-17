@@ -74,6 +74,7 @@ class NewWorkspacePart4PolicyTests(unittest.TestCase):
             "writing-policy/rules/struct_chinese_paper_outline.md",
             "writing-policy/rules/ai_style_markers.md",
             "writing-policy/rules/figure_table_caption.md",
+            "writing-policy/rules/scut_course_paper_format.md",
             "writing-policy/style_guides/guide_academic_tone.md",
             "writing-policy/reference_cases/case_chinese_architecture_outline.md",
             "writing-policy/rubrics/chapter_argument_alignment.md",
