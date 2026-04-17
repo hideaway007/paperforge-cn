@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 1 Search Result Triage"
+  short_description: "Rank Part 1 search-result candidates before download without changing canonical artifacts."
+  default_prompt: "Use $part1-search-result-triage to review outputs/part1/search_results_candidates.json and return download/maybe/skip recommendations only; do not write canonical artifacts, source IDs, citations, or gate decisions."

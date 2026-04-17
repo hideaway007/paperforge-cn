@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -10,9 +11,12 @@ const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
 
 const TASK_PATH = path.join(PROJECT_ROOT, 'outputs', 'part1', 'cnki_task.txt');
 const MANIFEST_PATH = path.join(PROJECT_ROOT, 'outputs', 'part1', 'download_manifest.json');
+const CANDIDATES_PATH = path.join(PROJECT_ROOT, 'outputs', 'part1', 'search_results_candidates.json');
+const DOWNLOAD_QUEUE_PATH = path.join(PROJECT_ROOT, 'outputs', 'part1', 'download_queue.json');
 const PAPERS_DIR = path.join(PROJECT_ROOT, 'raw-library', 'papers');
 const PROVENANCE_DIR = path.join(PROJECT_ROOT, 'raw-library', 'provenance');
-const TMP_DOWNLOAD_DIR = path.join(PAPERS_DIR, '.tmp-downloads');
+const TMP_DOWNLOAD_DIR = process.env.PART1_CNKI_TMP_DOWNLOAD_DIR
+  || path.join(os.tmpdir(), 'rtm-cnki-downloads', Buffer.from(PROJECT_ROOT).toString('base64url'));
 const CNKI_HOME = 'https://www.cnki.net';
 const CNKI_ADVANCED = 'https://kns.cnki.net/kns8s/AdvSearch';
 function positiveIntFromEnv(name, fallback) {
@@ -27,20 +31,22 @@ function positiveIntFromEnv(name, fallback) {
 
 const MAX_DOWNLOADS = positiveIntFromEnv('PART1_CNKI_MAX_DOWNLOADS', 28);
 const PER_QUERY_SUCCESS_CAP = Math.min(positiveIntFromEnv('PART1_CNKI_PER_QUERY_CAP', 100), MAX_DOWNLOADS);
+const COLLECT_CANDIDATES_ONLY = process.env.PART1_COLLECT_CANDIDATES_ONLY === '1';
+const CANDIDATE_PAGE_LIMIT = positiveIntFromEnv('PART1_CANDIDATE_PAGE_LIMIT', 3);
+const CANDIDATE_PER_QUERY_LIMIT = positiveIntFromEnv('PART1_CANDIDATE_PER_QUERY_LIMIT', 60);
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const jitter = (minMs, maxMs) => delay(minMs + Math.floor(Math.random() * (maxMs - minMs + 1)));
 const isoNow = () => new Date().toISOString();
 
 function ensureDirs() {
-  for (const dir of [PAPERS_DIR, PROVENANCE_DIR, path.dirname(MANIFEST_PATH)]) {
+  for (const dir of [PAPERS_DIR, PROVENANCE_DIR, path.dirname(MANIFEST_PATH), path.dirname(CANDIDATES_PATH)]) {
     fs.mkdirSync(dir, { recursive: true });
   }
   ensureSafeTmpDownloadDir();
 }
 
 function ensureSafeTmpDownloadDir() {
-  const papersRealPath = fs.realpathSync(PAPERS_DIR);
   if (fs.existsSync(TMP_DOWNLOAD_DIR)) {
     const stat = fs.lstatSync(TMP_DOWNLOAD_DIR);
     if (stat.isSymbolicLink()) {
@@ -53,9 +59,8 @@ function ensureSafeTmpDownloadDir() {
     fs.mkdirSync(TMP_DOWNLOAD_DIR, { recursive: true });
   }
   const tmpRealPath = fs.realpathSync(TMP_DOWNLOAD_DIR);
-  const relative = path.relative(papersRealPath, tmpRealPath);
-  if (relative.startsWith('..') || path.isAbsolute(relative)) {
-    throw new Error(`${TMP_DOWNLOAD_DIR} must stay inside ${PAPERS_DIR}`);
+  if (tmpRealPath === path.parse(tmpRealPath).root) {
+    throw new Error(`${TMP_DOWNLOAD_DIR} must not be a filesystem root`);
   }
 }
 
@@ -115,9 +120,54 @@ function titleKey(title, year) {
   return `${String(title || '').replace(/\s+/g, '').toLowerCase()}::${year || ''}`;
 }
 
+function candidateId(queryId, rank) {
+  return `${queryId}_rank_${String(rank).padStart(3, '0')}`;
+}
+
 function parseResultTotal(text) {
   const match = String(text || '').match(/共找到\s*([\d,]+)\s*条结果/);
   return match ? Number(match[1].replace(/,/g, '')) : 0;
+}
+
+function writeCandidates(candidateDoc) {
+  ensureDirs();
+  fs.writeFileSync(CANDIDATES_PATH, JSON.stringify(candidateDoc, null, 2), 'utf8');
+}
+
+function loadDownloadQueue() {
+  if (!fs.existsSync(DOWNLOAD_QUEUE_PATH)) return null;
+  const data = JSON.parse(fs.readFileSync(DOWNLOAD_QUEUE_PATH, 'utf8'));
+  const items = Array.isArray(data.items) ? data.items : [];
+  const candidateIds = new Set();
+  const titleKeys = new Set();
+  const queryIds = new Set();
+  const queryMaxRank = new Map();
+  for (const item of items) {
+    if (!item || typeof item !== 'object') continue;
+    const itemCandidateId = String(item.candidate_id || '');
+    const queryId = String(item.query_id || '');
+    const rank = Number(item.rank || 0);
+    if (itemCandidateId) candidateIds.add(itemCandidateId);
+    if (item.title) titleKeys.add(titleKey(item.title, item.year));
+    if (queryId) queryIds.add(queryId);
+    if (queryId && Number.isInteger(rank) && rank > 0) {
+      queryMaxRank.set(queryId, Math.max(queryMaxRank.get(queryId) || 0, rank));
+    }
+  }
+  return {
+    raw: data,
+    items,
+    candidateIds,
+    titleKeys,
+    queryIds,
+    queryMaxRank,
+  };
+}
+
+function candidateAllowedByQueue(row, downloadQueue) {
+  if (!downloadQueue) return true;
+  if (downloadQueue.candidateIds.has(String(row.candidate_id || ''))) return true;
+  return downloadQueue.titleKeys.has(titleKey(row.title, row.year));
 }
 
 function nextCountersFromDisk() {
@@ -721,6 +771,7 @@ function writeProvenance(sourceId, queryId, metadata) {
   const data = {
     source_id: sourceId,
     query_id: queryId,
+    candidate_id: metadata.candidate_id || '',
     db: 'cnki',
     title: metadata.title || '',
     authors: metadata.authors || [],
@@ -751,8 +802,10 @@ async function main() {
   const createdAt = isoNow();
   const queriesExecuted = [];
   const failedDownloads = [];
+  const collectedCandidates = [];
   let totalFound = 0;
   let totalDownloaded = 0;
+  const downloadQueue = COLLECT_CANDIDATES_ONLY ? null : loadDownloadQueue();
 
   const buildManifest = (extra = {}) => ({
     manifest_id: manifestId,
@@ -777,6 +830,12 @@ async function main() {
     throw error;
   }
 
+  if (COLLECT_CANDIDATES_ONLY) {
+    console.log(`[mode] collecting search result candidates only: ${path.relative(PROJECT_ROOT, CANDIDATES_PATH)}`);
+  } else if (downloadQueue) {
+    console.log(`[queue] loaded ${downloadQueue.items.length} queued candidates from ${path.relative(PROJECT_ROOT, DOWNLOAD_QUEUE_PATH)}`);
+  }
+
   const cdp = new Cdp(readChromeEndpoint());
   let searchPage = null;
   let detailPage = null;
@@ -794,6 +853,10 @@ async function main() {
     await checkLogin(cdp, searchPage.sessionId);
 
     for (const query of queries) {
+      if (downloadQueue && !downloadQueue.queryIds.has(query.query_id)) {
+        console.log(`\n[query] ${query.query_id}: skipped by download_queue.json`);
+        continue;
+      }
       queriesExecuted.push(query.query_id);
       console.log(`\n[query] ${query.query_id}: ${cnkiExpression(query)}`);
       const resultInfo = await runSearch(cdp, searchPage.sessionId, query);
@@ -802,11 +865,39 @@ async function main() {
 
       let pageNo = 1;
       let queryDownloaded = 0;
+      let queryCandidateRank = 0;
       while (true) {
-        const rows = await collectPageResults(cdp, searchPage.sessionId, query.query_id);
+        const rawRows = await collectPageResults(cdp, searchPage.sessionId, query.query_id);
+        const rows = [];
+        for (const rawRow of rawRows) {
+          queryCandidateRank += 1;
+          if (COLLECT_CANDIDATES_ONLY && queryCandidateRank > CANDIDATE_PER_QUERY_LIMIT) continue;
+          rows.push({
+            ...rawRow,
+            db: 'cnki',
+            rank: queryCandidateRank,
+            candidate_id: candidateId(query.query_id, queryCandidateRank),
+            collected_at: createdAt,
+          });
+        }
         console.log(`[page] ${query.query_id} page ${pageNo}: ${rows.length} rows`);
 
+        if (COLLECT_CANDIDATES_ONLY) {
+          collectedCandidates.push(...rows);
+          const shouldContinueCollecting = (
+            pageNo < CANDIDATE_PAGE_LIMIT
+            && queryCandidateRank < CANDIDATE_PER_QUERY_LIMIT
+          );
+          if (!shouldContinueCollecting) break;
+          const hasNext = await clickNextPage(cdp, searchPage.sessionId);
+          if (!hasNext) break;
+          pageNo += 1;
+          continue;
+        }
+
         for (const row of rows) {
+          if (!candidateAllowedByQueue(row, downloadQueue)) continue;
+
           const key = titleKey(row.title, row.year);
           if (attemptedTitles.has(key)) continue;
           attemptedTitles.add(key);
@@ -856,7 +947,12 @@ async function main() {
         }
         if (fatalError) break;
 
-        const shouldContinue = totalDownloaded < MAX_DOWNLOADS && queryDownloaded < PER_QUERY_SUCCESS_CAP;
+        const queuedMaxRank = downloadQueue?.queryMaxRank.get(query.query_id) || 0;
+        const shouldContinue = (
+          totalDownloaded < MAX_DOWNLOADS
+          && queryDownloaded < PER_QUERY_SUCCESS_CAP
+          && (!downloadQueue || queryCandidateRank < queuedMaxRank)
+        );
         if (!shouldContinue) break;
         const hasNext = await clickNextPage(cdp, searchPage.sessionId);
         if (!hasNext) break;
@@ -886,6 +982,25 @@ async function main() {
       stopped_at: isoNow(),
     }));
     throw fatalError;
+  }
+
+  if (COLLECT_CANDIDATES_ONLY) {
+    writeCandidates({
+      created_at: createdAt,
+      artifact_type: 'part1_search_results_candidates',
+      task_type: 'cnki_search_candidate_collection',
+      source: 'cnki',
+      candidate_collection_config: {
+        page_limit_per_query: CANDIDATE_PAGE_LIMIT,
+        candidate_limit_per_query: CANDIDATE_PER_QUERY_LIMIT,
+      },
+      queries_executed: queriesExecuted,
+      total_found: totalFound,
+      total_candidates: collectedCandidates.length,
+      candidates: collectedCandidates,
+    });
+    console.log(`\n[done] found=${totalFound} candidates=${collectedCandidates.length}`);
+    return;
   }
 
   const manifest = buildManifest({

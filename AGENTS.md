@@ -218,6 +218,8 @@ runtime/agents/part6_{business_step}.py
 - `runtime/agents/part1_library_table_exporter.py` 负责导出 Part 1 已下载论文清单；表格从 `raw-library/provenance/` 与 `raw-library/metadata.json` 读取，不得替代 canonical `raw-library/metadata.json`。
 - Part 1 检索计划必须先生成并执行 CNKI 聚焦查询；`cnki_q1_1` 必须绑定当前 confirmed intake 的研究对象与方法 / 教学 / 应用 / 案例锚点，不得退化为泛化大 OR 查询，也不得复用旧题目的固定检索词。
 - Part 1 相关性评分必须从当前 confirmed intake 派生 `tier_A` 锚点；任何旧题目锚点都不得作为当前论文的必要条件。
+- `runtime/agents/part1_download_queue_builder.py` 负责从 `outputs/part1/search_results_candidates.json` 与可选 `outputs/part1/researchagent_search_result_triage.json` 生成 `outputs/part1/download_queue.json`；下载前 triage 只提高候选排序与下载命中率，不替代后续相关性评分、真实性校验或资料库注册 gate。
+- `part1-search-result-triage` 是 `researchagent` 的下载前候选审查 skill；它只能输出 sidecar recommendation，不得写 `download_queue.json`、不得新增 `source_id` / citation / case fact / research conclusion、不得确认 human gate。
 - Part 1 下载 manifest 校验通过后，必须生成 `outputs/part1/downloaded_papers_table.csv` / `.md`；资料库注册完成后应刷新该表格以补充 relevance、authenticity 与 accepted 状态。
 - Part 1 资料库注册必须生成 `outputs/part1/source_quota_report.json`；未满足 40 篇总量、CNKI 24-28 篇、英文期刊不少于 5 篇时，不得写入或推进 canonical `raw-library/metadata.json`。
 - 网页详情页或开放网页全文可作为本地落地 artifact 进入 `raw-library/web-archives/{source_id}.md`；优先由本地 Google Chrome 的 Obsidian/Web Clipper 插件生成 Markdown，再由 `runtime/agents/web_markdown_archiver.py` 导入仓库并写 provenance。Chrome 插件调用本身不作为 deterministic gate；deterministic 边界是 Markdown 文件导入、路径校验、provenance 与真实性校验。

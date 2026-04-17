@@ -182,6 +182,70 @@ class Part1RunnerPreflightTests(unittest.TestCase):
         self.assertIn("地域建筑符号空间结构研究", csv_text)
         self.assertIn("讨论地域建筑符号空间结构与教学链。", csv_text)
 
+    def test_step_3_collects_candidates_and_builds_queue_before_download(self):
+        (self.project_root / "outputs" / "part1" / "cnki_task.txt").write_text(
+            "- query_id: cnki_q1_1\n  terms: \"岭南建筑\"\n",
+            encoding="utf-8",
+        )
+        node_envs = []
+
+        def fake_node(_script_name, *args, env=None):
+            self.assertEqual((), args)
+            node_envs.append(dict(env or {}))
+            if env and env.get("PART1_COLLECT_CANDIDATES_ONLY") == "1":
+                (self.project_root / "outputs" / "part1" / "search_results_candidates.json").write_text(
+                    json.dumps({
+                        "total_candidates": 1,
+                        "candidates": [
+                            {
+                                "candidate_id": "cnki_q1_1_rank_001",
+                                "query_id": "cnki_q1_1",
+                                "db": "cnki",
+                                "rank": 1,
+                                "title": "岭南建筑创作现代性研究",
+                            }
+                        ],
+                    }, ensure_ascii=False),
+                    encoding="utf-8",
+                )
+                return True
+            self.write_manifest()
+            return True
+
+        def fake_queue_builder(script_name, *args):
+            self.assertEqual("part1_download_queue_builder.py", script_name)
+            self.assertIn("--project-root", args)
+            (self.project_root / "outputs" / "part1" / "download_queue.json").write_text(
+                json.dumps({
+                    "artifact_type": "part1_download_queue",
+                    "llm_triage_is_gate": False,
+                    "total_queued": 1,
+                    "items": [
+                        {
+                            "candidate_id": "cnki_q1_1_rank_001",
+                            "query_id": "cnki_q1_1",
+                            "db": "cnki",
+                            "rank": 1,
+                            "title": "岭南建筑创作现代性研究",
+                        }
+                    ],
+                    "skipped_items": [],
+                }, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            return True
+
+        with mock.patch.object(self.runner, "run_node_script", side_effect=fake_node):
+            with mock.patch.object(self.runner, "run_script", side_effect=fake_queue_builder):
+                with mock.patch.object(self.runner, "export_part1_downloaded_papers_table", return_value=True):
+                    ok = self.runner.run_step3(cnki_max_downloads=5)
+
+        self.assertTrue(ok)
+        self.assertEqual("1", node_envs[0]["PART1_COLLECT_CANDIDATES_ONLY"])
+        self.assertEqual("5", node_envs[0]["PART1_CNKI_MAX_DOWNLOADS"])
+        self.assertNotIn("PART1_COLLECT_CANDIDATES_ONLY", node_envs[1])
+        self.assertEqual("5", node_envs[1]["PART1_CNKI_MAX_DOWNLOADS"])
+
     def test_step_0_creates_intake_request_when_intake_is_missing(self):
         self.write_state(completed_gates=[])
 

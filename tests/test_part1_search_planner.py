@@ -256,6 +256,19 @@ class Part1SearchPlannerTests(unittest.TestCase):
                     "English supplement queries should expose English journal search terms",
                 )
 
+    def test_search_plan_expands_known_architect_aliases(self):
+        intake = traditional_residential_renewal_intake()
+        intake["research_topic"] = "岭南建筑创作及其现代性研究"
+        intake["research_question"] = "何静堂的建筑创作如何体现岭南建筑现代性？"
+        intake["keywords_required"] = ["岭南建筑", "现代性", "建筑创作"]
+        intake["keywords_suggested"] = ["何静堂", "两观三性", "本土化"]
+
+        plan = self.planner.generate_plan(intake)
+        plan_text = json.dumps(plan, ensure_ascii=False)
+
+        self.assertIn("何静堂", plan_text)
+        self.assertIn("何镜堂", plan_text)
+
     def test_researchagent_sidecar_runs_when_configured(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)

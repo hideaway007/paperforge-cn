@@ -29,6 +29,8 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
 AGENTS_DIR = Path(__file__).parent
+CANDIDATES_REL = "outputs/part1/search_results_candidates.json"
+DOWNLOAD_QUEUE_REL = "outputs/part1/download_queue.json"
 
 # ── 步骤定义 ───────────────────────────────────────────────────────────────────
 
@@ -130,6 +132,14 @@ def run_node_script(script_name: str, *args: str, env: dict[str, str] | None = N
         next_env.update(env)
     result = subprocess.run(cmd, cwd=PROJECT_ROOT, env=next_env)
     return result.returncode == 0
+
+
+def load_json_file(path: Path) -> dict:
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, dict):
+        raise ValueError(f"{path} must contain a JSON object")
+    return data
 
 
 def load_local_agent_module(script_name: str, module_name: str):
@@ -347,6 +357,65 @@ def load_download_manifest(manifest_path: Path) -> tuple[dict | None, list[str]]
     return manifest, validate_download_manifest(manifest)
 
 
+def ensure_part1_download_queue(cnki_max_downloads: int | None = None) -> bool:
+    """Collect search candidates and build deterministic download_queue.json before CNKI download."""
+    candidates_path = PROJECT_ROOT / CANDIDATES_REL
+    queue_path = PROJECT_ROOT / DOWNLOAD_QUEUE_REL
+
+    if not candidates_path.exists():
+        print("  先收集 CNKI 搜索结果候选，不下载 PDF...")
+        env = {
+            "PART1_COLLECT_CANDIDATES_ONLY": "1",
+        }
+        if cnki_max_downloads is not None:
+            env["PART1_CNKI_MAX_DOWNLOADS"] = str(cnki_max_downloads)
+        ok = run_node_script("cnki_cdp_downloader.mjs", env=env)
+        if not ok:
+            print_err("CNKI 候选收集失败，未进入 PDF 下载阶段")
+            return False
+        if not candidates_path.exists():
+            print_err(f"候选收集结束但未生成 {CANDIDATES_REL}")
+            return False
+        try:
+            candidates_doc = load_json_file(candidates_path)
+            print_ok(
+                f"候选结果: {CANDIDATES_REL} "
+                f"({candidates_doc.get('total_candidates', '?')} 条)"
+            )
+        except Exception as e:
+            print_err(f"{CANDIDATES_REL} 无法解析: {e}")
+            return False
+
+    if not queue_path.exists():
+        print("  构建下载队列（deterministic score + optional researchagent sidecar）...")
+        ok = run_script(
+            "part1_download_queue_builder.py",
+            "--project-root", str(PROJECT_ROOT),
+        )
+        if not ok:
+            print_err("part1_download_queue_builder.py 执行失败")
+            return False
+        if not queue_path.exists():
+            print_err(f"下载队列构建结束但未生成 {DOWNLOAD_QUEUE_REL}")
+            return False
+
+    try:
+        queue = load_json_file(queue_path)
+    except Exception as e:
+        print_err(f"{DOWNLOAD_QUEUE_REL} 无法解析: {e}")
+        return False
+
+    total_queued = int(queue.get("total_queued") or len(queue.get("items", [])))
+    print_ok(f"下载队列: {DOWNLOAD_QUEUE_REL} ({total_queued} 条)")
+    if queue.get("llm_triage_is_gate") is not False:
+        print_err("download_queue.json 必须声明 llm_triage_is_gate=false")
+        return False
+    if total_queued <= 0:
+        print_err("download_queue.json 没有可下载候选；请检查检索词或 researchagent triage sidecar。")
+        return False
+    return True
+
+
 def run_step3(
     manual_download: bool = False,
     skip_wait: bool = False,
@@ -387,8 +456,11 @@ def run_step3(
         print("  完成下载后重新运行：python3 runtime/agents/part1_runner.py")
         return False
 
+    if not ensure_part1_download_queue(cnki_max_downloads=cnki_max_downloads):
+        return False
+
     print()
-    print("  启动 CNKI CDP 下载器...")
+    print("  启动 CNKI CDP 下载器，按 download_queue.json 下载 PDF...")
     env = {}
     if cnki_max_downloads is not None:
         env["PART1_CNKI_MAX_DOWNLOADS"] = str(cnki_max_downloads)

@@ -55,12 +55,12 @@ def build_cnki_queries(intake: dict) -> list[dict]:
 
     groups = []
 
-    all_terms = _unique_terms(
+    all_terms = _expand_known_aliases(_unique_terms(
         required_kws
         + suggested_kws
         + _as_list(intake.get("discipline_fields", []))
         + _as_list(intake.get("expected_research_types", []))
-    )
+    ))
     object_terms = _terms_matching(
         all_terms,
         [
@@ -229,6 +229,21 @@ def _unique_terms(terms: list[str]) -> list[str]:
         seen.add(normalized)
         unique.append(normalized)
     return unique
+
+
+def _expand_known_aliases(terms: list[str]) -> list[str]:
+    """Expand known domain aliases without replacing the user's original terms."""
+    aliases = {
+        "何静堂": ["何镜堂", "何镜堂建筑创作", "何镜堂 两观三性", "何镜堂 岭南建筑"],
+        "何镜堂": ["何静堂"],
+    }
+    expanded: list[str] = []
+    for term in terms:
+        expanded.append(term)
+        for needle, replacements in aliases.items():
+            if needle in term:
+                expanded.extend(replacements)
+    return _unique_terms(expanded)
 
 
 def build_wanfang_queries(intake: dict) -> list[dict]:
