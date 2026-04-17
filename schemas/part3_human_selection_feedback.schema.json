@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "part3_human_selection_feedback",
+  "title": "Part 3 Human Selection Feedback",
+  "description": "Part 3 human decision artifact: outputs/part3/human_selection_feedback.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "selected_at",
+    "selected_candidate_id",
+    "candidate_source",
+    "selection_notes",
+    "candidate_tree_ref",
+    "candidate_comparison_ref",
+    "locked_artifact"
+  ],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "selected_at": { "type": "string", "format": "date-time" },
+    "selected_candidate_id": { "type": "string" },
+    "candidate_source": {
+      "type": "string",
+      "enum": ["original", "refined"]
+    },
+    "selection_notes": {
+      "type": "string",
+      "minLength": 1,
+      "description": "人工选择理由，不允许为空"
+    },
+    "selector": {
+      "type": "string",
+      "description": "可选：选择人或选择来源"
+    },
+    "candidate_tree_ref": { "type": "string" },
+    "candidate_comparison_ref": { "type": "string" },
+    "locked_artifact": {
+      "type": "string",
+      "const": "outputs/part3/argument_tree.json"
+    },
+    "feedback": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "可选：对后续 outline 的反馈约束"
+    }
+  }
+}

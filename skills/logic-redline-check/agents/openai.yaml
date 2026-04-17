@@ -1,0 +1,4 @@
+interface:
+  display_name: "Logic Redline Check"
+  short_description: "Check fatal logic and term consistency risks"
+  default_prompt: "Use $logic-redline-check to redline fatal logic breaks, term drift, and blocking readability risks without rewriting the manuscript."

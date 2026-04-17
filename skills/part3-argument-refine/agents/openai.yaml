@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 3 Argument Refine"
+  short_description: "Refine Part 3 argument drafts"
+  default_prompt: "Use $part3-argument-refine to create refined Part 3 candidate argument trees from argument_seed_map.json, candidate_comparison.json, and argument_quality_report.json without overwriting original candidates or locking the canonical tree."

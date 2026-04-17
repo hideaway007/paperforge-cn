@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 5 Review Manuscript"
+  short_description: "Review manuscript_v1 and integrate review matrix"
+  default_prompt: "Use $part5-review-manuscript to run part5-review, respect review fragment ownership, generate canonical review artifacts plus outputs/part5/review_report.md, then continue to automated revision without requiring part5_review_completed."

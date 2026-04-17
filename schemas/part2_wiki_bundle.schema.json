@@ -1,0 +1,112 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "part2_wiki_bundle",
+  "title": "Part 2 Wiki Bundle",
+  "description": "Part 2 canonical artifact: research-wiki/index.json — wiki 页面索引与来源映射",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "source_bundle_ref",
+    "source_mapping_complete",
+    "pages",
+    "health_summary"
+  ],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "last_updated": { "type": "string", "format": "date-time" },
+    "source_bundle_ref": {
+      "type": "string",
+      "description": "关联的 raw-library/metadata.json 路径，用于回溯"
+    },
+    "source_mapping_complete": {
+      "type": "boolean",
+      "description": "gate 校验字段：所有页面均有 source_ids，无孤立无源页面"
+    },
+    "pages": {
+      "type": "array",
+      "description": "wiki 页面索引列表",
+      "items": { "$ref": "#/$defs/WikiPageIndex" }
+    },
+    "health_summary": {
+      "type": "object",
+      "required": ["total_pages", "orphan_pages", "unsourced_pages", "contradiction_count"],
+      "properties": {
+        "total_pages": { "type": "integer" },
+        "orphan_pages": {
+          "type": "integer",
+          "description": "无交叉引用的孤立页面数量（别名 isolated_pages）"
+        },
+        "isolated_pages": {
+          "type": "integer",
+          "description": "orphan_pages 的别名，两者取其一填写即可；gate 阈值 <= 2"
+        },
+        "unsourced_pages": {
+          "type": "integer",
+          "description": "无来源映射（source_ids 为空）的页面数量；gate 要求此值为 0"
+        },
+        "contradiction_count": {
+          "type": "integer",
+          "description": "检测到的矛盾/冲突页面数量（别名 contradiction_pages / unresolved_contradiction_pages）"
+        },
+        "contradiction_pages": {
+          "type": "integer",
+          "description": "contradiction_count 的别名"
+        },
+        "unresolved_contradiction_pages": {
+          "type": "integer",
+          "description": "未解决矛盾页面数；gate 阈值 <= 3"
+        },
+        "last_health_check": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "WikiPageIndex": {
+      "type": "object",
+      "required": ["page_id", "title", "page_type", "source_ids", "file_path", "created_at"],
+      "properties": {
+        "page_id": {
+          "type": "string",
+          "description": "页面唯一标识符，如 concept_001、topic_social_capital"
+        },
+        "title": { "type": "string" },
+        "page_type": {
+          "type": "string",
+          "enum": [
+            "concept",
+            "topic",
+            "method",
+            "contradiction",
+            "evidence_aggregation"
+          ]
+        },
+        "source_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "关联的 raw-library source_id 列表，至少 1 个",
+          "minItems": 1
+        },
+        "related_pages": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "交叉引用的其他 page_id"
+        },
+        "file_path": {
+          "type": "string",
+          "description": "research-wiki/pages/ 下的文件相对路径"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "part3_candidate_tree",
+  "title": "Part 3 Candidate Argument Tree",
+  "description": "Part 3 draft artifact: outputs/part3/candidate_argument_trees/{candidate_id}.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "candidate_id",
+    "generated_at",
+    "strategy",
+    "wiki_ref",
+    "root"
+  ],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "candidate_id": {
+      "type": "string",
+      "description": "候选树 ID，必须与 candidate_argument_trees/ 下文件名一致"
+    },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "strategy": {
+      "type": "string",
+      "enum": ["theory_first", "problem_solution", "case_application"],
+      "description": "候选生成策略，如 theory_first、problem_solution、case_application"
+    },
+    "wiki_ref": {
+      "type": "string",
+      "description": "依赖的 research-wiki/index.json 路径"
+    },
+    "writing_policy_ref": {
+      "type": "string",
+      "description": "可选：依赖的 writing-policy/source_index.json 路径"
+    },
+    "argument_seed_map_ref": {
+      "type": "string",
+      "description": "可选：依赖的 outputs/part3/argument_seed_map.json 路径"
+    },
+    "argument_quality_report_ref": {
+      "type": "string",
+      "description": "可选：refined candidate 依赖的 argument quality report 路径"
+    },
+    "candidate_comparison_ref": {
+      "type": "string",
+      "description": "可选：refined candidate 依赖的 comparison 路径"
+    },
+    "based_on_candidate_ref": {
+      "type": "string",
+      "description": "可选：refined candidate 的原始候选路径"
+    },
+    "root": {
+      "$ref": "#/$defs/ArgumentNode",
+      "description": "论证树根节点，候选阶段不允许作为 canonical 使用"
+    },
+    "generation_notes": {
+      "type": "string",
+      "description": "生成策略说明与局限"
+    }
+  },
+  "$defs": {
+    "ArgumentNode": {
+      "type": "object",
+      "required": ["node_id", "claim", "node_type"],
+      "properties": {
+        "node_id": { "type": "string" },
+        "claim": { "type": "string" },
+        "node_type": {
+          "type": "string",
+          "enum": [
+            "thesis",
+            "main_argument",
+            "sub_argument",
+            "evidence",
+            "counterargument",
+            "rebuttal"
+          ]
+        },
+        "support_source_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "wiki_page_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "seed_item_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "LLM candidate nodes must cite deterministic argument_seed_map item_id values used to derive this node"
+        },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ArgumentNode" }
+        },
+        "warrant": {
+          "type": "string",
+          "description": "本节点从证据走向论点的推理依据"
+        },
+        "evidence_summary": {
+          "type": "string",
+          "description": "本节点所用证据的保守概括"
+        },
+        "assumptions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "limitations": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "risk_flags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

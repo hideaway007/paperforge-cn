@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 4 Outline Alignment"
+  short_description: "Align Part 4 outline with evidence"
+  default_prompt: "Use $outline-alignment to generate or check Part 4 outline artifacts against the argument tree, research wiki, writing policy, reference cases, and rubric. Do not require outline_confirmed; Part 4 can continue to automated Part 5 after the completion gate passes."

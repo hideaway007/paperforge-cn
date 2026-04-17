@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "part5_review_matrix",
+  "title": "Part 5 Review Matrix",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "manuscript_ref", "reviews"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {"type": "string"},
+    "generated_at": {"type": "string"},
+    "manuscript_ref": {
+      "type": "string",
+      "const": "outputs/part5/manuscript_v1.md"
+    },
+    "reviews": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["review_id", "dimension", "severity", "finding", "status"],
+        "additionalProperties": true,
+        "properties": {
+          "review_id": {"type": "string", "minLength": 1},
+          "dimension": {
+            "type": "string",
+            "enum": ["structure", "argument", "evidence", "citation", "writing_policy", "debt", "revision"]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "finding": {"type": "string", "minLength": 1},
+          "claim_ids": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "status": {
+            "type": "string",
+            "enum": ["registered", "unresolved", "resolved", "mitigated", "downgraded"]
+          }
+        }
+      }
+    }
+  }
+}

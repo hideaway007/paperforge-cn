@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 4 Outline Authoring"
+  short_description: "Guide Part 4 outline content and structure"
+  default_prompt: "Use $part4-outline-authoring to design a Part 4 paper outline that maps argument-tree nodes into writable Chinese academic sections without mixing reference-case content into research evidence."

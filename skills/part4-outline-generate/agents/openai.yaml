@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 4 Outline Generate"
+  short_description: "Generate Part 4 outline artifacts"
+  default_prompt: "Use $part4-outline-generate to generate and validate canonical paper_outline.json, outline_rationale.json, and reference_alignment_report.json from the locked argument tree, research wiki, and writing policy. Part 4 no longer requires outline_confirmed; if validation passes, prepare to continue into automated Part 5 without entering Part 6."

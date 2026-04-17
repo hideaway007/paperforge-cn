@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 3 Argument Generate"
+  short_description: "Generate Part 3 argument tree drafts"
+  default_prompt: "Use $part3-argument-generate only after deterministic part3-seed-map has produced outputs/part3/argument_seed_map.json. Create three candidate argument trees with seed_item_ids and do not lock the canonical argument tree."

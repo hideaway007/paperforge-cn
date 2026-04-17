@@ -1,0 +1,120 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "part6_citation_consistency_report",
+  "title": "Part 6 Citation Consistency Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "manuscript_ref",
+    "citation_map_ref",
+    "raw_metadata_ref",
+    "wiki_index_ref",
+    "accepted_sources_ref",
+    "authenticity_report_ref",
+    "status",
+    "checked_claim_ids",
+    "checked_source_ids",
+    "citation_items",
+    "warnings",
+    "errors"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {"type": "string"},
+    "generated_at": {"type": "string"},
+    "manuscript_ref": {
+      "type": "string",
+      "const": "outputs/part6/final_manuscript.md"
+    },
+    "citation_map_ref": {
+      "type": "string",
+      "const": "outputs/part5/citation_map.json"
+    },
+    "raw_metadata_ref": {
+      "type": "string",
+      "const": "raw-library/metadata.json"
+    },
+    "wiki_index_ref": {
+      "type": "string",
+      "const": "research-wiki/index.json"
+    },
+    "accepted_sources_ref": {
+      "type": "string",
+      "const": "outputs/part1/accepted_sources.json"
+    },
+    "authenticity_report_ref": {
+      "type": "string",
+      "const": "outputs/part1/authenticity_report.json"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pass", "pass_with_warnings", "blocked"]
+    },
+    "checked_claim_ids": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "checked_source_ids": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "citation_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_id",
+          "claim_ids",
+          "citation_status",
+          "raw_metadata_present",
+          "wiki_mapped",
+          "authenticity_status",
+          "reference_entry_status",
+          "drift_detected",
+          "issues",
+          "action"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "source_id": {"type": "string", "minLength": 1},
+          "claim_ids": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "citation_status": {"type": "string", "minLength": 1},
+          "raw_metadata_present": {"type": "boolean"},
+          "wiki_mapped": {"type": "boolean"},
+          "authenticity_status": {"type": "string", "minLength": 1},
+          "reference_entry_status": {
+            "type": "string",
+            "enum": ["present", "missing", "malformed"]
+          },
+          "drift_detected": {"type": "boolean"},
+          "issues": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "keep",
+              "fix_format",
+              "remove_citation",
+              "downgrade_claim",
+              "block_submission"
+            ]
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "errors": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  }
+}

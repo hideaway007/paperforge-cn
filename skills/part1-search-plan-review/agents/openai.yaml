@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 1 Search Plan Review"
+  short_description: "Review Part 1 search plans without changing canonical artifacts."
+  default_prompt: "Use $part1-search-plan-review to review outputs/part1/search_plan.json against intake and source policy. Return a sidecar report only; do not rewrite canonical Part 1 artifacts or confirm gates."

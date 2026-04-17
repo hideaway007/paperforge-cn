@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 6 Submission Package"
+  short_description: "Build draft or final submission package"
+  default_prompt: "Use $part6-build-submission-package to create submission_checklist.md and submission_package_manifest.json in draft or final mode. Do not edit manuscripts or audit reports; final manifest verdict must match final_readiness_decision.json."

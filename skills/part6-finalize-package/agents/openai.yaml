@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 6 Finalize Package"
+  short_description: "Orchestrate Part 6 finalization"
+  default_prompt: "Use $part6-finalize-package to orchestrate Part 6 in order: precheck, finalize, audit-claim, audit-citation, package-draft, decide, package-final, validate. Do not directly write child artifacts, do not auto-confirm Part 6 human gates, and do not advance Part 7."

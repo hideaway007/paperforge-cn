@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 3 Argument Compare"
+  short_description: "Compare Part 3 argument tree drafts"
+  default_prompt: "Use $part3-argument-compare to compare the three candidate argument trees and write candidate_comparison.json with pros, cons, risks, and a selection recommendation."

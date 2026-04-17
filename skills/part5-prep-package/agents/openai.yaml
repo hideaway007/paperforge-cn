@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 5 Prep Package"
+  short_description: "Prepare Part 5 writing inputs"
+  default_prompt: "Use $part5-prep-package to generate the Part 5 prep package with part5-prep after Part 4 completion. Do not require or record writing_phase_authorized or part5_prep_confirmed; continue to draft when prep artifacts are complete."

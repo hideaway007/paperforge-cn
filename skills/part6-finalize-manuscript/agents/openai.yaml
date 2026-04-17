@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 6 Finalize Manuscript"
+  short_description: "Conservatively produce final manuscript"
+  default_prompt: "Use $part6-finalize-manuscript to create final_manuscript.md, final_abstract.md, and final_keywords.json from outputs/part5/manuscript_v2.md. Do not add claims, sources, case facts, citations, or modify audit/package/decision artifacts."

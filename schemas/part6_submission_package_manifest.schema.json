@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "part6_submission_package_manifest",
+  "title": "Part 6 Submission Package Manifest",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "package_id",
+    "status",
+    "submission_class",
+    "included_files",
+    "required_files",
+    "missing_files",
+    "audit_refs",
+    "policy_refs",
+    "evidence_refs",
+    "human_decision_required"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {"type": "string"},
+    "generated_at": {"type": "string"},
+    "package_id": {"type": "string", "minLength": 1},
+    "status": {
+      "type": "string",
+      "enum": ["complete", "incomplete", "blocked"]
+    },
+    "submission_class": {
+      "type": "string",
+      "enum": [
+        "formal_submission_ready",
+        "internal_review_only",
+        "blocked_by_evidence_debt"
+      ]
+    },
+    "included_files": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "required_files": {
+      "type": "array",
+      "minItems": 7,
+      "allOf": [
+        {"contains": {"const": "outputs/part6/final_manuscript.md"}},
+        {"contains": {"const": "outputs/part6/final_abstract.md"}},
+        {"contains": {"const": "outputs/part6/final_keywords.json"}},
+        {"contains": {"const": "outputs/part6/submission_checklist.md"}},
+        {"contains": {"const": "outputs/part6/claim_risk_report.json"}},
+        {"contains": {"const": "outputs/part6/citation_consistency_report.json"}},
+        {"contains": {"const": "outputs/part6/final_readiness_decision.json"}}
+      ],
+      "items": {"type": "string"}
+    },
+    "missing_files": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "audit_refs": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "policy_refs": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "human_decision_required": {
+      "type": "boolean",
+      "const": true
+    }
+  }
+}

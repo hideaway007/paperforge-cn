@@ -1,0 +1,4 @@
+interface:
+  display_name: "Author Style Profile Build"
+  short_description: "Distill an anonymous academic author style profile"
+  default_prompt: "Use $author-style-profile-build to distill writing mechanisms from provided author samples into writing-policy/style_guides. Keep the author anonymous, do not edit manuscripts directly, and never treat style material as research evidence."

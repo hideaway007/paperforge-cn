@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "part6_claim_risk_report",
+  "title": "Part 6 Claim Risk Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "manuscript_ref",
+    "source_manuscript_ref",
+    "claim_evidence_matrix_ref",
+    "part5_claim_risk_report_ref",
+    "risk_items",
+    "summary"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {"type": "string"},
+    "generated_at": {"type": "string"},
+    "manuscript_ref": {
+      "type": "string",
+      "const": "outputs/part6/final_manuscript.md"
+    },
+    "source_manuscript_ref": {
+      "type": "string",
+      "const": "outputs/part5/manuscript_v2.md"
+    },
+    "claim_evidence_matrix_ref": {
+      "type": "string",
+      "const": "outputs/part5/claim_evidence_matrix.json"
+    },
+    "part5_claim_risk_report_ref": {
+      "type": "string",
+      "const": "outputs/part5/claim_risk_report.json"
+    },
+    "risk_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "risk_id",
+          "claim_id",
+          "risk_level",
+          "risk_type",
+          "finding",
+          "source_ids",
+          "wiki_page_ids",
+          "recommended_action",
+          "applied_action",
+          "status",
+          "residual_debt"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "risk_id": {"type": "string", "minLength": 1},
+          "claim_id": {"type": "string", "minLength": 1},
+          "risk_level": {
+            "type": "string",
+            "enum": ["low_risk", "medium_risk", "high_risk", "blocked"]
+          },
+          "risk_type": {
+            "type": "string",
+            "enum": [
+              "factual",
+              "interpretation",
+              "citation",
+              "source_sufficiency",
+              "case_verification"
+            ]
+          },
+          "finding": {"type": "string", "minLength": 1},
+          "source_ids": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "wiki_page_ids": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "recommended_action": {
+            "type": "string",
+            "enum": [
+              "revise_wording",
+              "add_source",
+              "downgrade_claim",
+              "remove_paragraph",
+              "defer_to_future_research",
+              "no_action_needed"
+            ]
+          },
+          "applied_action": {
+            "type": "string",
+            "enum": [
+              "revise_wording",
+              "downgrade_claim",
+              "remove_paragraph",
+              "defer_to_future_research",
+              "no_action_needed"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["resolved", "mitigated", "downgraded", "deferred", "blocked"]
+          },
+          "residual_debt": {"type": "string"}
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

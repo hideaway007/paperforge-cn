@@ -1,0 +1,167 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "part3_candidate_comparison",
+  "title": "Part 3 Candidate Comparison",
+  "description": "Part 3 comparison artifact: outputs/part3/candidate_comparison.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "wiki_ref",
+    "candidate_tree_refs",
+    "quality_dimensions",
+    "candidates",
+    "recommendation"
+  ],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "wiki_ref": { "type": "string" },
+    "candidate_tree_refs": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "type": "string" },
+      "description": "参与比较的候选树文件路径"
+    },
+    "quality_dimensions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "thesis_clarity",
+          "warrant_strength",
+          "evidence_fit",
+          "counterargument_handling",
+          "outline_viability",
+          "risk_level"
+        ]
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "$ref": "#/$defs/CandidateEvaluation" }
+    },
+    "recommendation": {
+      "type": "object",
+      "required": ["recommended_candidate_id", "reason", "human_decision_required"],
+      "properties": {
+        "recommended_candidate_id": { "type": "string" },
+        "reason": { "type": "string" },
+        "human_decision_required": {
+          "type": "boolean",
+          "const": true,
+          "description": "必须为 true；comparison 不能代替人工选择"
+        },
+        "selection_cautions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "CandidateEvaluation": {
+      "type": "object",
+      "required": [
+        "candidate_id",
+        "strategy",
+        "strengths",
+        "weaknesses",
+        "risks",
+        "quality",
+        "evidence_coverage",
+        "wiki_coverage"
+      ],
+      "properties": {
+        "candidate_id": { "type": "string" },
+        "strategy": { "type": "string" },
+        "thesis": {
+          "type": "string",
+          "description": "候选树根主张，用于人工选择表直接展示论文主线"
+        },
+        "argument_nodes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ArgumentNodeSummary" },
+          "description": "候选树核心论证节点摘要，用于人工选择表展示论点、推理依据与证据摘要"
+        },
+        "score": { "type": "number", "minimum": 0, "maximum": 100 },
+        "strengths": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "weaknesses": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "risks": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "quality": {
+          "type": "object",
+          "required": [
+            "thesis_clarity",
+            "warrant_strength",
+            "evidence_fit",
+            "counterargument_handling",
+            "outline_viability",
+            "risk_level"
+          ],
+          "properties": {
+            "thesis_clarity": { "type": "number", "minimum": 0, "maximum": 1 },
+            "warrant_strength": { "type": "number", "minimum": 0, "maximum": 1 },
+            "evidence_fit": { "type": "number", "minimum": 0, "maximum": 1 },
+            "counterargument_handling": { "type": "number", "minimum": 0, "maximum": 1 },
+            "outline_viability": { "type": "number", "minimum": 0, "maximum": 1 },
+            "risk_level": {
+              "type": "string",
+              "enum": ["low", "medium", "high"]
+            }
+          }
+        },
+        "evidence_coverage": {
+          "type": "object",
+          "required": ["source_ids", "source_count"],
+          "properties": {
+            "source_ids": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "source_count": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "wiki_coverage": {
+          "type": "object",
+          "required": ["page_ids", "page_count"],
+          "properties": {
+            "page_ids": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "page_count": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "ArgumentNodeSummary": {
+      "type": "object",
+      "required": ["node_id", "node_type", "claim"],
+      "properties": {
+        "node_id": { "type": "string" },
+        "node_type": { "type": "string" },
+        "claim": { "type": "string" },
+        "warrant": { "type": "string" },
+        "evidence_summary": { "type": "string" },
+        "limitations": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "source_count": { "type": "integer", "minimum": 0 },
+        "wiki_page_count": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

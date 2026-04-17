@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "part1_provenance",
+  "title": "Part 1 Provenance Record",
+  "description": "Part 1 download-stage provenance record for raw-library/provenance/{source_id}.json",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "source_id",
+    "query_id",
+    "db",
+    "title",
+    "authors",
+    "journal",
+    "year",
+    "doi_or_cnki_id",
+    "url",
+    "abstract",
+    "keywords",
+    "download_status",
+    "downloaded_at"
+  ],
+  "properties": {
+    "source_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "query_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "db": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Source database ID, such as cnki, wanfang, vip, crossref, openalex."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "authors": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "journal": {
+      "type": "string",
+      "minLength": 1
+    },
+    "year": {
+      "type": "integer",
+      "minimum": 1800,
+      "maximum": 2200
+    },
+    "doi_or_cnki_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "url": {
+      "type": "string",
+      "minLength": 1
+    },
+    "abstract": {
+      "type": "string",
+      "minLength": 1
+    },
+    "keywords": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "download_status": {
+      "type": "string",
+      "enum": ["success", "failed", "skipped", "pending"]
+    },
+    "downloaded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "local_path": {
+      "type": "string",
+      "description": "Optional local artifact path. Defaults to raw-library/papers/{source_id}.pdf when absent."
+    },
+    "local_artifact_type": {
+      "type": "string",
+      "enum": ["pdf", "markdown"]
+    },
+    "archive_method": {
+      "type": "string"
+    },
+    "relevance": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "tier": { "type": "string" },
+        "scored_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "authenticity": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "verdict": { "type": "string" },
+        "checked_at": { "type": "string", "format": "date-time" },
+        "flags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "registration": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "status": { "type": "string" },
+        "registered_at": { "type": "string", "format": "date-time" },
+        "metadata_ref": { "type": "string" }
+      }
+    }
+  }
+}

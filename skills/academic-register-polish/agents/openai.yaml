@@ -1,0 +1,4 @@
+interface:
+  display_name: "Academic Register Polish"
+  short_description: "Conservatively polish Chinese academic prose"
+  default_prompt: "Use $academic-register-polish to conservatively polish Chinese academic manuscript prose without adding claims, citations, sources, or research facts."

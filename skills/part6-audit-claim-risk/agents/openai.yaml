@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 6 Claim Risk Audit"
+  short_description: "Audit claims and evidence sufficiency"
+  default_prompt: "Use $part6-audit-claim-risk to audit final manuscript claims, evidence sufficiency, and case verification. Only write outputs/part6/claim_risk_report.json; do not edit the manuscript, manifests, wiki, or decision artifacts."

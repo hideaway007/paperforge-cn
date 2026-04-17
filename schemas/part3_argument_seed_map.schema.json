@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "part3_argument_seed_map",
+  "title": "Part 3 Argument Seed Map",
+  "description": "Part 3 pre-candidate artifact: outputs/part3/argument_seed_map.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "wiki_ref",
+    "raw_metadata_ref",
+    "research_question",
+    "candidate_claims",
+    "evidence_points",
+    "contradictions",
+    "counterclaims",
+    "method_paths",
+    "case_boundaries",
+    "evidence_gaps",
+    "background_only_materials"
+  ],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "wiki_ref": { "type": "string" },
+    "raw_metadata_ref": { "type": "string" },
+    "research_question": { "type": "string" },
+    "source_traceability": {
+      "type": "object",
+      "properties": {
+        "wiki_page_count": { "type": "integer", "minimum": 0 },
+        "wiki_source_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "raw_source_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "candidate_claims": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SeedItem" }
+    },
+    "evidence_points": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SeedItem" }
+    },
+    "contradictions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SeedItem" }
+    },
+    "counterclaims": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SeedItem" }
+    },
+    "method_paths": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SeedItem" }
+    },
+    "case_boundaries": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SeedItem" }
+    },
+    "evidence_gaps": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SeedItem" }
+    },
+    "background_only_materials": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SeedItem" }
+    },
+    "generation_notes": { "type": "string" }
+  },
+  "$defs": {
+    "SeedItem": {
+      "type": "object",
+      "required": ["item_id", "text", "source_ids", "wiki_page_ids"],
+      "properties": {
+        "item_id": { "type": "string" },
+        "text": { "type": "string" },
+        "source_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "wiki_page_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "page_type": { "type": "string" },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

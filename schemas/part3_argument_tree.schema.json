@@ -1,0 +1,125 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "part3_argument_tree",
+  "title": "Part 3 Argument Tree",
+  "description": "Part 3 canonical artifact: outputs/part3/argument_tree.json — 人工选定并锁定的论证树",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "locked_at",
+    "selected_candidate_id",
+    "candidate_source",
+    "candidate_tree_ref",
+    "human_selection_ref",
+    "wiki_ref",
+    "root"
+  ],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "locked_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "人工选定并锁定的时间戳；此字段存在且非 null 表示 canonical 状态"
+    },
+    "selected_candidate_id": {
+      "type": "string",
+      "description": "从 3 份候选中选定的 candidate ID，对应 candidate_argument_trees/ 下的文件名"
+    },
+    "candidate_source": {
+      "type": "string",
+      "enum": ["original", "refined"],
+      "description": "候选来源：原始候选或 refined candidate"
+    },
+    "candidate_tree_ref": {
+      "type": "string",
+      "description": "被人工选择的候选树路径"
+    },
+    "human_selection_ref": {
+      "type": "string",
+      "description": "关联的 outputs/part3/human_selection_feedback.json 路径，回溯人工选择依据"
+    },
+    "candidate_comparison_ref": {
+      "type": "string",
+      "description": "关联的 outputs/part3/candidate_comparison.json 路径"
+    },
+    "wiki_ref": {
+      "type": "string",
+      "description": "依赖的 research-wiki/index.json 路径，用于回溯知识来源"
+    },
+    "root": {
+      "$ref": "#/$defs/ArgumentNode",
+      "description": "论证树根节点（通常为 thesis 类型）"
+    }
+  },
+  "$defs": {
+    "ArgumentNode": {
+      "type": "object",
+      "required": ["node_id", "claim", "node_type"],
+      "properties": {
+        "node_id": {
+          "type": "string",
+          "description": "节点唯一标识符，如 thesis_001、arg_001_1"
+        },
+        "claim": {
+          "type": "string",
+          "description": "本节点的论点陈述"
+        },
+        "node_type": {
+          "type": "string",
+          "enum": [
+            "thesis",
+            "main_argument",
+            "sub_argument",
+            "evidence",
+            "counterargument",
+            "rebuttal"
+          ]
+        },
+        "support_source_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "支撑本节点的 raw-library source_id 列表，用于回溯至文献"
+        },
+        "wiki_page_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "关联的 research-wiki page_id 列表，用于回溯至 wiki"
+        },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ArgumentNode" },
+          "description": "子节点列表"
+        },
+        "warrant": {
+          "type": "string",
+          "description": "本节点从证据走向论点的推理依据"
+        },
+        "evidence_summary": {
+          "type": "string",
+          "description": "本节点所用证据的保守概括"
+        },
+        "assumptions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "limitations": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "risk_flags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "notes": {
+          "type": "string",
+          "description": "本节点的备注或说明"
+        }
+      }
+    }
+  }
+}

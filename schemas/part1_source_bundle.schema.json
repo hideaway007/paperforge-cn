@@ -1,0 +1,153 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "part1_source_bundle",
+  "title": "Part 1 Source Bundle",
+  "description": "Part 1 canonical artifact: raw-library/metadata.json — 已验真文献元数据集合",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "intake_ref", "sources", "summary"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Schema 版本号，如 1.0.0"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "intake_ref": {
+      "type": "string",
+      "description": "关联的 intake ID，用于回溯检索来源与参数"
+    },
+    "search_plan_ref": {
+      "type": "string",
+      "description": "关联的 outputs/part1/search_plan.json 路径"
+    },
+    "sources": {
+      "type": "array",
+      "description": "已验真并本地落地的文献记录列表",
+      "items": { "$ref": "#/$defs/SourceRecord" }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["total_accepted", "total_excluded", "tier1_count", "tier2_count"],
+      "properties": {
+        "total_accepted": { "type": "integer" },
+        "total_excluded": { "type": "integer" },
+        "tier1_count": { "type": "integer", "description": "中文主来源数量" },
+        "tier2_count": { "type": "integer", "description": "英文补充来源数量" },
+        "tier3_count": { "type": "integer" }
+      }
+    }
+  },
+  "$defs": {
+    "SourceRecord": {
+      "type": "object",
+      "required": [
+        "source_id",
+        "title",
+        "source_tier",
+        "source_name",
+        "language",
+        "authenticity_status",
+        "relevance_score",
+        "local_path",
+        "provenance_path",
+        "added_at"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "description": "唯一标识符，格式建议：{source_name}_{year}_{seq}，如 cnki_2023_001"
+        },
+        "title": { "type": "string" },
+        "authors": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "year": { "type": "integer" },
+        "journal": { "type": "string" },
+        "doi": { "type": ["string", "null"] },
+        "abstract": { "type": "string" },
+        "keywords": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "source_tier": {
+          "type": "string",
+          "enum": [
+            "tier1_chinese_primary",
+            "tier2_english_supplement",
+            "tier3_supplementary"
+          ]
+        },
+        "source_name": {
+          "type": "string",
+          "description": "来源数据库 ID，如 cnki、wanfang、crossref"
+        },
+        "language": {
+          "type": "string",
+          "enum": ["zh", "en", "other"]
+        },
+        "authenticity_status": {
+          "type": "string",
+          "enum": ["verified", "failed", "pending"],
+          "description": "只有 verified 状态的文献才能进入 canonical artifact"
+        },
+        "authenticity_checks": {
+          "type": "object",
+          "description": "各项真实性校验结果",
+          "properties": {
+            "identifier_evidence": { "type": "boolean" },
+            "index_evidence": { "type": "boolean" },
+            "source_landing_evidence": { "type": "boolean" },
+            "local_download_success": { "type": "boolean" },
+            "provenance_complete": { "type": "boolean" }
+          }
+        },
+        "relevance_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "综合相关性评分（>=0.6 方可进入）"
+        },
+        "relevance_dimensions": {
+          "type": "object",
+          "description": "各维度相关性评分明细",
+          "properties": {
+            "topic_consistency": { "type": "number", "minimum": 0, "maximum": 1 },
+            "research_question_match": { "type": "number", "minimum": 0, "maximum": 1 },
+            "title_abstract_keyword_hit": { "type": "number", "minimum": 0, "maximum": 1 },
+            "method_sample_object_match": { "type": "number", "minimum": 0, "maximum": 1 },
+            "time_range_fit": { "type": "number", "minimum": 0, "maximum": 1 },
+            "chinese_writing_usability": { "type": "number", "minimum": 0, "maximum": 1 },
+            "source_credibility": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "local_path": {
+          "type": "string",
+          "pattern": "^raw-library/(papers/[A-Za-z0-9][A-Za-z0-9_.:-]*\\.pdf|web-archives/[A-Za-z0-9][A-Za-z0-9_.:-]*\\.md)$",
+          "description": "本地落地文件相对路径；PDF 位于 raw-library/papers/，网页 Markdown 归档位于 raw-library/web-archives/"
+        },
+        "local_artifact_type": {
+          "type": "string",
+          "enum": ["pdf", "markdown"],
+          "description": "本地文件类型"
+        },
+        "normalized_path": {
+          "type": ["string", "null"],
+          "pattern": "^raw-library/normalized/[A-Za-z0-9][A-Za-z0-9_.:-]*\\.txt$",
+          "description": "raw-library/normalized/ 下的规范化文本路径，null 表示尚未规范化"
+        },
+        "provenance_path": {
+          "type": "string",
+          "pattern": "^raw-library/provenance/[A-Za-z0-9][A-Za-z0-9_.:-]*\\.json$",
+          "description": "raw-library/provenance/ 下的 provenance 记录路径"
+        },
+        "added_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

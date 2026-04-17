@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "part5_readiness_decision",
+  "title": "Part 5 to Part 6 Readiness Decision",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "verdict", "registered_blockers", "residual_risks", "handoff_artifacts"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {"type": "string"},
+    "generated_at": {"type": "string"},
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "ready_for_part6",
+        "ready_for_part6_with_research_debt",
+        "blocked_by_evidence_debt"
+      ]
+    },
+    "registered_blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["dimension", "finding"],
+        "additionalProperties": true,
+        "properties": {
+          "dimension": {"type": "string"},
+          "finding": {"type": "string", "minLength": 1},
+          "claim_ids": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      }
+    },
+    "residual_risks": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "handoff_artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string"}
+    }
+  }
+}

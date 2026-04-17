@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 2 Policy Build"
+  short_description: "Build separated writing policy layer"
+  default_prompt: "Use $part2-policy-build to build writing-policy source_index, rules, style guides, reference cases, and rubrics while keeping writing-policy physically separate from research-wiki."

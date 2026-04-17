@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 5 Revise Manuscript"
+  short_description: "Revise to manuscript_v2 and export final draft"
+  default_prompt: "Use $part5-revise-manuscript to run part5-revise after canonical review artifacts are complete, generate outputs/part5/manuscript_v2.md, validate Part 5, and stop. Do not require manuscript_v2_accepted, and do not enter Part 6."

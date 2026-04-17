@@ -1,0 +1,43 @@
+# Runtime state and generated research artifacts
+/runtime/state.json
+/runtime/state.json.bak
+/outputs/**
+!/outputs/
+!/outputs/**/
+!/outputs/**/.gitkeep
+/raw-library/**
+!/raw-library/
+!/raw-library/**/
+!/raw-library/**/.gitkeep
+/research-wiki/**
+!/research-wiki/
+!/research-wiki/**/
+!/research-wiki/**/.gitkeep
+/process-memory/**
+!/process-memory/
+!/process-memory/.gitkeep
+/workspaces/**
+!/workspaces/
+!/workspaces/.gitkeep
+
+# Local runtime/cache files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+node_modules/
+dist/
+build/
+.DS_Store
+*.log
+.ccb/
+.claude/
+.obsidian/
+
+# Local exports
+part6_final_manuscript.md

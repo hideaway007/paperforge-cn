@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "part6_final_readiness_decision",
+  "title": "Part 6 Final Readiness Decision",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "verdict",
+    "manifest_ref",
+    "claim_risk_report_ref",
+    "citation_consistency_report_ref",
+    "blocking_issues",
+    "residual_risks",
+    "residual_research_debts",
+    "required_human_decisions",
+    "does_not_advance_part7"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {"type": "string"},
+    "generated_at": {"type": "string"},
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "formal_submission_ready",
+        "internal_review_only",
+        "blocked_by_evidence_debt"
+      ]
+    },
+    "manifest_ref": {
+      "type": "string",
+      "const": "outputs/part6/submission_package_manifest.json"
+    },
+    "claim_risk_report_ref": {
+      "type": "string",
+      "const": "outputs/part6/claim_risk_report.json"
+    },
+    "citation_consistency_report_ref": {
+      "type": "string",
+      "const": "outputs/part6/citation_consistency_report.json"
+    },
+    "blocking_issues": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "residual_risks": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "residual_research_debts": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "required_human_decisions": {
+      "type": "array",
+      "contains": {"const": "part6_final_decision_confirmed"},
+      "items": {"type": "string"}
+    },
+    "does_not_advance_part7": {
+      "type": "boolean",
+      "const": true
+    }
+  }
+}

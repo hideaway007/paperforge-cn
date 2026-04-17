@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 4 Outline Confirm"
+  short_description: "Deprecated compatibility note for old Part 4 confirmation"
+  default_prompt: "Use $part4-outline-confirm only as deprecated compatibility guidance. Do not request or record outline_confirmed in the normal workflow; validate Part 4 artifacts and continue to automated Part 5 when the completion gate passes."

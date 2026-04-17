@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 5 Draft Manuscript"
+  short_description: "Draft manuscript_v1 after automated prep"
+  default_prompt: "Use $part5-draft-manuscript to run part5-draft after prep artifacts are complete. Do not require part5_prep_confirmed; continue to automated review when manuscript_v1 is generated, and do not enter Part 6."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 6 Write Manuscript Body"
+  short_description: "Write the Part 6 manuscript body"
+  default_prompt: "Use $part6-write-manuscript-body to write outputs/part6/writer_body.md from canonical Part 5 handoff artifacts, without editing audit/package/decision artifacts or confirming human gates."

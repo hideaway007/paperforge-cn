@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 3 Argument Stress Test"
+  short_description: "Stress-test Part 3 argument drafts"
+  default_prompt: "Use $part3-argument-stress-test to attack the three Part 3 candidate argument trees and write argument_quality_report.json without changing candidates or locking the canonical argument tree."

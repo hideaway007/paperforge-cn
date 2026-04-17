@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 3 Human Selection"
+  short_description: "Lock Part 3 after human selection"
+  default_prompt: "Use $part3-human-selection to ask for an explicit candidate_id, candidate source, and selection reason, then record human_selection_feedback.json and lock outputs/part3/argument_tree.json without proceeding to Part 4."

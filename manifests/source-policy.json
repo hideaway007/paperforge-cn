@@ -1,0 +1,160 @@
+{
+  "policy_id": "source-policy-v1",
+  "description": "来源优先级策略、相关性评估规则与真实性校验规则",
+  "version": "1.0.0",
+  "part1_collection_quota": {
+    "target_total": 40,
+    "cnki_min_count": 24,
+    "cnki_max_count": 28,
+    "cnki_target_count": 26,
+    "cnki_min_ratio": 0.6,
+    "cnki_max_ratio": 0.7,
+    "english_journal_min_count": 5,
+    "enforced_on": "accepted_sources",
+    "constraint": "Part 1 最终 accepted sources 必须为 40 篇；CNKI 占 60%-70%；英文期刊不少于 5 篇；其余来自非 CNKI 补充来源。"
+  },
+  "source_tiers": {
+    "tier1_chinese_primary": {
+      "description": "中文主来源，必须优先执行检索，不可省略",
+      "mandatory": true,
+      "constraint": "CNKI 为第一优先来源，不可跳过",
+      "sources": [
+        {
+          "id": "cnki",
+          "name": "中国知网 (CNKI)",
+          "priority": 1,
+          "description": "第一优先来源，任何情况下不可绕过"
+        },
+        {
+          "id": "wanfang",
+          "name": "万方数据",
+          "priority": 2
+        },
+        {
+          "id": "vip",
+          "name": "维普期刊",
+          "priority": 3
+        }
+      ]
+    },
+    "tier2_english_supplement": {
+      "description": "英文补充来源，用于补充方法、国际背景、前沿趋势与术语映射",
+      "mandatory": false,
+      "constraint": "不得无约束替代中文主检索策略；英文来源只能作为补充层",
+      "sources": [
+        {
+          "id": "crossref",
+          "name": "Crossref",
+          "priority": 1
+        },
+        {
+          "id": "openalex",
+          "name": "OpenAlex",
+          "priority": 2
+        },
+        {
+          "id": "doaj",
+          "name": "DOAJ",
+          "priority": 3
+        }
+      ]
+    },
+    "tier3_supplementary": {
+      "description": "其他经策略允许的补充来源",
+      "mandatory": false,
+      "requires_explicit_user_allowance": true,
+      "sources": []
+    }
+  },
+  "relevance_policy": {
+    "description": "相关性评估策略——不得只按关键词粗暴抓取，必须综合评估",
+    "required_dimensions": [
+      {
+        "id": "topic_consistency",
+        "name": "主题一致性",
+        "description": "文献研究主题与本研究问题的一致程度"
+      },
+      {
+        "id": "research_question_match",
+        "name": "研究问题匹配度",
+        "description": "文献是否直接回答或贡献于本研究的核心问题"
+      },
+      {
+        "id": "title_abstract_keyword_hit",
+        "name": "标题/摘要/关键词命中",
+        "description": "检索词在标题、摘要、关键词中的命中情况"
+      },
+      {
+        "id": "method_sample_object_match",
+        "name": "方法/样本/对象匹配度",
+        "description": "研究方法、研究对象、研究样本的一致性"
+      },
+      {
+        "id": "time_range_fit",
+        "name": "时间范围适配",
+        "description": "发表时间是否符合本研究设定的时间范围"
+      },
+      {
+        "id": "chinese_writing_usability",
+        "name": "中文写作场景可用性",
+        "description": "文献在中文学术写作场景下的可引用性与适配度"
+      },
+      {
+        "id": "source_credibility",
+        "name": "来源可信度",
+        "description": "来源数据库、期刊、出版机构的权威性"
+      }
+    ],
+    "minimum_score_to_accept": 0.6,
+    "scoring_note": "relevance_score 须综合以上维度加权计算，不得跳过任何维度"
+  },
+  "authenticity_policy": {
+    "description": "真实性校验——进入主资料库前必须全部通过",
+    "required_checks": [
+      {
+        "id": "identifier_evidence",
+        "name": "标识证据",
+        "description": "DOI / ISSN / ISBN / 机构编号等标识可查验"
+      },
+      {
+        "id": "index_evidence",
+        "name": "索引证据",
+        "description": "在目标数据库中可检索到该文献记录"
+      },
+      {
+        "id": "source_landing_evidence",
+        "name": "来源落地证据",
+        "description": "来源 URL 或数据库详情页可正常访问"
+      },
+      {
+        "id": "local_download_success",
+        "name": "本地文件落地成功",
+        "description": "PDF 或全文已成功下载至 raw-library/papers/"
+      },
+      {
+        "id": "provenance_complete",
+        "name": "来源记录与 provenance 完整",
+        "description": "provenance JSON 已生成且字段完整（见 schemas/part1_source_bundle.schema.json）"
+      }
+    ],
+    "on_pass": "记录至 raw-library/metadata.json，纳入 accepted_sources",
+    "on_failure": "block — 不得进入主资料库，记录至 outputs/part1/excluded_sources_log.json，附失败原因"
+  },
+  "deduplication_policy": {
+    "description": "去重策略",
+    "dedup_fields": ["doi", "title_normalized", "authors_hash"],
+    "strategy": "exact_doi_first_then_title_fuzzy",
+    "on_duplicate": "保留优先级更高来源的记录（tier 数字小者优先），将另一条记录至 dedup_log"
+  },
+  "exclusion_policy": {
+    "excluded_by_default": [
+      "未经同行评审的预印本",
+      "网页摘要或二手转述",
+      "非学术来源（博客、新闻、社交媒体）",
+      "相关性评分低于阈值（< 0.6）的结果",
+      "真实性校验未通过的来源"
+    ],
+    "can_be_overridden_by_user": true,
+    "override_requires_explicit_reason": true
+  }
+}

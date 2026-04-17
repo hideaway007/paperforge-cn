@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 5 MVP Navigator"
+  short_description: "Choose the right Part 5 skill"
+  default_prompt: "Use $part5-mvp-drafting to route a broad Part 5 request to the automated prep, draft, review, and revise flow. Do not require Part 5 human gates; preserve review/revision artifacts and do not enter Part 6."

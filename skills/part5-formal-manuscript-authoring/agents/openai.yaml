@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 5 Formal Manuscript Authoring"
+  short_description: "Shape Part 5 draft into formal Chinese thesis style"
+  default_prompt: "Use $part5-formal-manuscript-authoring when drafting manuscript_v1 to produce formal Chinese academic paper structure with proper title, abstract, chapter hierarchy, chapter summaries, conclusion, and references without adding research facts."

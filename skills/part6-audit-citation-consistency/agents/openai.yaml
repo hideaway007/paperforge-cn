@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 6 Citation Audit"
+  short_description: "Audit citation consistency"
+  default_prompt: "Use $part6-audit-citation-consistency to audit citation mapping, format consistency, source drift, and wiki/raw metadata traceability. Only write outputs/part6/citation_consistency_report.json; do not edit the manuscript, manifests, or decision artifacts."

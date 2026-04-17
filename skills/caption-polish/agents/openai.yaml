@@ -1,0 +1,4 @@
+interface:
+  display_name: "Caption Polish"
+  short_description: "Polish academic figure and table captions"
+  default_prompt: "Use $caption-polish to polish figure and table captions while preserving numbering, source mapping, and research claims."

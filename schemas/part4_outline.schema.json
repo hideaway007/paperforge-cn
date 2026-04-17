@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "part4_outline",
+  "title": "Part 4 Paper Outline",
+  "description": "Part 4 canonical artifact: outputs/part4/paper_outline.json — 可回溯至 argument tree 与 wiki 的 canonical 论文大纲",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "argument_tree_ref",
+    "wiki_ref",
+    "writing_policy_ref",
+    "sections"
+  ],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "confirmed_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Legacy field retained for old artifacts; Part 4 no longer requires outline_confirmed."
+    },
+    "argument_tree_ref": {
+      "type": "string",
+      "description": "关联的 outputs/part3/argument_tree.json 路径，必填，用于对齐校验"
+    },
+    "wiki_ref": {
+      "type": "string",
+      "description": "关联的 research-wiki/index.json 路径"
+    },
+    "writing_policy_ref": {
+      "type": "string",
+      "description": "关联的 writing-policy/source_index.json 路径"
+    },
+    "reference_cases_used": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "参考的中文论文案例名称或路径列表"
+    },
+    "sections": {
+      "type": "array",
+      "description": "顶层章节列表",
+      "items": { "$ref": "#/$defs/OutlineSection" }
+    }
+  },
+  "$defs": {
+    "OutlineSection": {
+      "type": "object",
+      "required": ["section_id", "title", "level"],
+      "properties": {
+        "section_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$",
+          "description": "章节唯一标识符，如 sec_1、sec_2_1"
+        },
+        "title": { "type": "string" },
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4,
+          "description": "章节层级：1=一级章节，2=二级，3=三级，4=四级"
+        },
+        "brief": {
+          "type": "string",
+          "description": "本节核心内容摘要，说明要表达什么、支撑什么论点"
+        },
+        "argument_node_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "关联的 argument tree node_id，用于与 argument tree 对齐校验"
+        },
+        "support_source_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "本节关键支撑文献的 source_id，可回溯至 raw-library"
+        },
+        "writing_constraints": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "本节适用的写作规范约束或禁区（来自 writing-policy）"
+        },
+        "subsections": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/OutlineSection" },
+          "description": "子章节列表"
+        }
+      }
+    }
+  }
+}

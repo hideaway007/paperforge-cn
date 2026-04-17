@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reviewer Perspective Audit"
+  short_description: "Review manuscripts from an academic reviewer lens"
+  default_prompt: "Use $reviewer-perspective-audit to produce a reviewer-style critique of manuscript structure, contribution, argument, and risk without editing canonical artifacts."

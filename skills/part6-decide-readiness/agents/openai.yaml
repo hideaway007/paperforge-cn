@@ -1,0 +1,4 @@
+interface:
+  display_name: "Part 6 Readiness Decision"
+  short_description: "Decide final readiness without advancing"
+  default_prompt: "Use $part6-decide-readiness to read Part 6 claim, citation, and package artifacts and write final_readiness_decision.json. Include does_not_advance_part7: true; do not authorize submission or edit any manuscript, report, or manifest."
